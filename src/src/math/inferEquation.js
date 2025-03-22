@@ -1,5 +1,55 @@
 import * as math from 'mathjs';
 
+// Helper function to detect percentage expressions like "5 % of 20 ="
+const detectPercentageExpression = (symbols) => {
+  if (symbols.length < 4) return false;
+  
+  // Look for pattern: number, %, "of", number, optional "="
+  const percentIndex = symbols.findIndex(sym => sym.text === '%');
+  if (percentIndex <= 0 || percentIndex >= symbols.length - 2) return false;
+  
+  const beforePercent = symbols[percentIndex - 1];
+  const afterPercent = symbols[percentIndex + 1];
+  const afterOf = symbols[percentIndex + 2];
+  
+  return beforePercent.type === 'number' && 
+         afterPercent.text === 'of' && 
+         afterOf.type === 'number';
+};
+
+// Helper function to handle percentage expressions and return a formatted equation
+const handlePercentageExpression = (symbols) => {
+  try {
+    // Look for the pattern: number, %, "of", number, optional "="
+    const percentIndex = symbols.findIndex(sym => sym.text === '%');
+    
+    if (percentIndex > 0 && percentIndex < symbols.length - 2) {
+      const percentValue = symbols[percentIndex - 1].text;
+      const ofIndex = symbols.findIndex(sym => sym.text === 'of');
+      
+      if (ofIndex > percentIndex && ofIndex < symbols.length - 1) {
+        const value = symbols[ofIndex + 1].text;
+        
+        // Create a percentage calculation equation
+        const calculation = `(${percentValue} / 100) * ${value}`;
+        
+        // If there's an equals sign, add it to the equation
+        const equalsIndex = symbols.findIndex(sym => sym.text === '=');
+        if (equalsIndex !== -1) {
+          return `${calculation} =`;
+        }
+        
+        return calculation;
+      }
+    }
+    
+    return '';
+  } catch (err) {
+    console.error('Error in percentage expression handling:', err);
+    return '';
+  }
+};
+
 const inferEquation = (containers, placedSymbols, setEquation, setResult, setError) => {
     try {
       // Group symbols by container
@@ -40,6 +90,15 @@ const inferEquation = (containers, placedSymbols, setEquation, setResult, setErr
         let units = [];
         let currentNumber = '';
         
+        // Check if this container has a percentage calculation pattern
+      const isPercentageExpression = detectPercentageExpression(symbols);
+      
+      // If it's a percentage calculation, handle it specially
+      if (isPercentageExpression) {
+        const percentageEquation = handlePercentageExpression(symbols);
+        expression = percentageEquation;
+      } else {
+
         symbols.forEach((sym, index) => {
           // Track variables
           if (sym.type === 'variable') {
@@ -88,7 +147,8 @@ const inferEquation = (containers, placedSymbols, setEquation, setResult, setErr
             expression += ' ';
           }
         });
-        
+      }
+      
         expression = expression.trim();
         containerExpressions[containerId] = expression;
         containerUnits[containerId] = units;

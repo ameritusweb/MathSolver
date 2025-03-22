@@ -166,6 +166,8 @@ const MathSolver = () => {
     { id: 'divide', type: 'operator', text: '÷' },
     { id: 'power', type: 'operator', text: '^' },
     { id: 'equals', type: 'operator', text: '=' },
+    { id: 'of', type: 'operator', text: 'of' }, // Added the "of" operator
+    { id: 'percent', type: 'operator', text: '%' }, // Added the "%" operator
     { id: '1', type: 'number', text: '1' },
     { id: '2', type: 'number', text: '2' },
     { id: '3', type: 'number', text: '3' },
