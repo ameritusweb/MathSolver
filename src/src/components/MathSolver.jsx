@@ -4,6 +4,158 @@ import inferEquation from '../math/inferEquation';
 import GraphModal from './GraphModal';
 
 const MathSolver = () => {
+
+  const commonEquations = [
+    {
+      id: 'natural_exp',
+      name: 'Natural Exponential (y = e^x)',
+      symbols: [
+        { id: 'y', type: 'variable', text: 'y' },
+        { id: 'equals', type: 'operator', text: '=' },
+        { id: 'e', type: 'number', text: 'e' },
+        { id: 'power', type: 'operator', text: '^' },
+        { id: 'x', type: 'variable', text: 'x' }
+      ]
+    },
+    {
+      id: 'exp_decay',
+      name: 'Exponential Decay (y = e^-x)',
+      symbols: [
+        { id: 'y', type: 'variable', text: 'y' },
+        { id: 'equals', type: 'operator', text: '=' },
+        { id: 'e', type: 'number', text: 'e' },
+        { id: 'power', type: 'operator', text: '^' },
+        { id: 'open_paren', type: 'grouping', text: '(' },
+        { id: 'minus', type: 'operator', text: '-' },
+        { id: 'x', type: 'variable', text: 'x' },
+        { id: 'close_paren', type: 'grouping', text: ')' }
+      ]
+    },
+    {
+      id: 'tan',
+      name: 'Tangent (y = tan(x))',
+      symbols: [
+        { id: 'y', type: 'variable', text: 'y' },
+        { id: 'equals', type: 'operator', text: '=' },
+        { id: 'tan', type: 'function', text: 'tan' },
+        { id: 'open_paren', type: 'grouping', text: '(' },
+        { id: 'x', type: 'variable', text: 'x' },
+        { id: 'close_paren', type: 'grouping', text: ')' }
+      ]
+    },
+    {
+      id: 'ln',
+      name: 'Natural Log (y = ln(x))',
+      symbols: [
+        { id: 'y', type: 'variable', text: 'y' },
+        { id: 'equals', type: 'operator', text: '=' },
+        { id: 'ln', type: 'function', text: 'ln' },
+        { id: 'open_paren', type: 'grouping', text: '(' },
+        { id: 'x', type: 'variable', text: 'x' },
+        { id: 'close_paren', type: 'grouping', text: ')' }
+      ]
+    },
+    {
+      id: 'abs',
+      name: 'Absolute Value (y = |x|)',
+      symbols: [
+        { id: 'y', type: 'variable', text: 'y' },
+        { id: 'equals', type: 'operator', text: '=' },
+        { id: 'abs', type: 'function', text: 'abs' },
+        { id: 'open_paren', type: 'grouping', text: '(' },
+        { id: 'x', type: 'variable', text: 'x' },
+        { id: 'close_paren', type: 'grouping', text: ')' }
+      ]
+    },
+    {
+      id: 'linear',
+      name: 'Linear (y = x)',
+      symbols: [
+        { id: 'y', type: 'variable', text: 'y' },
+        { id: 'equals', type: 'operator', text: '=' },
+        { id: 'x', type: 'variable', text: 'x' }
+      ]
+    },
+    {
+      id: 'quadratic',
+      name: 'Quadratic (y = x²)',
+      symbols: [
+        { id: 'y', type: 'variable', text: 'y' },
+        { id: 'equals', type: 'operator', text: '=' },
+        { id: 'x', type: 'variable', text: 'x' },
+        { id: 'power', type: 'operator', text: '^' },
+        { id: '2', type: 'number', text: '2' }
+      ]
+    },
+    {
+      id: 'cubic',
+      name: 'Cubic (y = x³)',
+      symbols: [
+        { id: 'y', type: 'variable', text: 'y' },
+        { id: 'equals', type: 'operator', text: '=' },
+        { id: 'x', type: 'variable', text: 'x' },
+        { id: 'power', type: 'operator', text: '^' },
+        { id: '3', type: 'number', text: '3' }
+      ]
+    },
+    {
+      id: 'sine',
+      name: 'Sine (y = sin(x))',
+      symbols: [
+        { id: 'y', type: 'variable', text: 'y' },
+        { id: 'equals', type: 'operator', text: '=' },
+        { id: 'sin', type: 'function', text: 'sin' },
+        { id: 'open_paren', type: 'grouping', text: '(' },
+        { id: 'x', type: 'variable', text: 'x' },
+        { id: 'close_paren', type: 'grouping', text: ')' }
+      ]
+    },
+    {
+      id: 'cosine',
+      name: 'Cosine (y = cos(x))',
+      symbols: [
+        { id: 'y', type: 'variable', text: 'y' },
+        { id: 'equals', type: 'operator', text: '=' },
+        { id: 'cos', type: 'function', text: 'cos' },
+        { id: 'open_paren', type: 'grouping', text: '(' },
+        { id: 'x', type: 'variable', text: 'x' },
+        { id: 'close_paren', type: 'grouping', text: ')' }
+      ]
+    },
+    {
+      id: 'exponential',
+      name: 'Exponential (y = 2^x)',
+      symbols: [
+        { id: 'y', type: 'variable', text: 'y' },
+        { id: 'equals', type: 'operator', text: '=' },
+        { id: '2', type: 'number', text: '2' },
+        { id: 'power', type: 'operator', text: '^' },
+        { id: 'x', type: 'variable', text: 'x' }
+      ]
+    },
+    {
+      id: 'root',
+      name: 'Square Root (y = √x)',
+      symbols: [
+        { id: 'y', type: 'variable', text: 'y' },
+        { id: 'equals', type: 'operator', text: '=' },
+        { id: 'sqrt', type: 'function', text: '√' },
+        { id: 'x', type: 'variable', text: 'x' }
+      ]
+    },
+    {
+      id: 'inverse',
+      name: 'Inverse (y = 1/x)',
+      symbols: [
+        { id: 'y', type: 'variable', text: 'y' },
+        { id: 'equals', type: 'operator', text: '=' },
+        { id: '1', type: 'number', text: '1' },
+        { id: 'divide', type: 'operator', text: '÷' },
+        { id: 'x', type: 'variable', text: 'x' }
+      ]
+    }
+  ];
+
   // Available mathematical symbols
   const mathSymbols = [
     { id: 'x', type: 'variable', text: 'x' },
@@ -112,6 +264,10 @@ const MathSolver = () => {
   
   const [graphContainer, setGraphContainer] = useState(null);
 
+  const clearContainer = (containerId) => {
+    setPlacedSymbols(placedSymbols.filter(sym => sym.containerId !== containerId));
+  };
+
   const getContainerExpression = (containerId) => {
     const symbolsByContainer = {};
       
@@ -138,6 +294,34 @@ const MathSolver = () => {
       .map(sym => sym.text)
       .join(' ')
       .trim();
+  };
+
+  const handleEquationClick = (equation) => {
+    // Find the first empty or nearly empty container
+    const targetContainer = containers.find(container => {
+      const symbolsInContainer = placedSymbols.filter(sym => sym.containerId === container.id);
+      return symbolsInContainer.length < 3; // Consider container empty if it has less than 3 symbols
+    });
+
+    if (!targetContainer) {
+      setError('Please add a new container first');
+      return;
+    }
+
+    // Calculate starting position in container
+    const startX = targetContainer.x + 50;
+    const startY = targetContainer.y + targetContainer.height / 2;
+    
+    // Add each symbol from the equation
+    const newSymbols = equation.symbols.map((symbol, index) => ({
+      ...symbol,
+      instanceId: `${symbol.id}_${Date.now()}_${index}`,
+      x: startX + (index * 50), // Space symbols horizontally
+      y: startY,
+      containerId: targetContainer.id
+    }));
+
+    setPlacedSymbols([...placedSymbols, ...newSymbols]);
   };
 
   const stageRef = useRef(null);
@@ -287,58 +471,76 @@ const MathSolver = () => {
       <div className="mb-4">
         <div className="flex mb-2 space-x-2">
           <button
-            className={`px-3 py-1 ${activeCategory === 'math' ? 'bg-blue-500 text-white' : 'bg-gray-200'} rounded`}
+            className={`px-3 py-1 ${activeCategory === 'math' ? 'bg-blue-500 text-white' : 'bg-gray-600'} rounded`}
             onClick={() => setActiveCategory('math')}
           >
             Math
           </button>
           <button
-            className={`px-3 py-1 ${activeCategory === 'length' ? 'bg-blue-500 text-white' : 'bg-gray-200'} rounded`}
+            className={`px-3 py-1 ${activeCategory === 'length' ? 'bg-blue-500 text-white' : 'bg-gray-600'} rounded`}
             onClick={() => setActiveCategory('length')}
           >
             Length
           </button>
           <button
-            className={`px-3 py-1 ${activeCategory === 'mass' ? 'bg-blue-500 text-white' : 'bg-gray-200'} rounded`}
+            className={`px-3 py-1 ${activeCategory === 'mass' ? 'bg-blue-500 text-white' : 'bg-gray-600'} rounded`}
             onClick={() => setActiveCategory('mass')}
           >
             Weight
           </button>
           <button
-            className={`px-3 py-1 ${activeCategory === 'volume' ? 'bg-blue-500 text-white' : 'bg-gray-200'} rounded`}
+            className={`px-3 py-1 ${activeCategory === 'volume' ? 'bg-blue-500 text-white' : 'bg-gray-600'} rounded`}
             onClick={() => setActiveCategory('volume')}
           >
             Volume
           </button>
           <button
-            className={`px-3 py-1 ${activeCategory === 'temperature' ? 'bg-blue-500 text-white' : 'bg-gray-200'} rounded`}
+            className={`px-3 py-1 ${activeCategory === 'temperature' ? 'bg-blue-500 text-white' : 'bg-gray-600'} rounded`}
             onClick={() => setActiveCategory('temperature')}
           >
             Temp
           </button>
           <button
-            className={`px-3 py-1 ${activeCategory === 'time' ? 'bg-blue-500 text-white' : 'bg-gray-200'} rounded`}
+            className={`px-3 py-1 ${activeCategory === 'time' ? 'bg-blue-500 text-white' : 'bg-gray-600'} rounded`}
             onClick={() => setActiveCategory('time')}
           >
             Time
           </button>
           <button
-            className={`px-3 py-1 mb-1 ${activeCategory === 'conversions' ? 'bg-blue-500 text-white' : 'bg-gray-200'} rounded`}
+            className={`px-3 py-1 ${activeCategory === 'conversions' ? 'bg-blue-500 text-white' : 'bg-gray-600'} rounded`}
             onClick={() => setActiveCategory('conversions')}
           >
             Conversions
           </button>
+          <button
+            className={`px-3 py-1 ${activeCategory === 'equations' ? 'bg-blue-500 text-white' : 'bg-gray-600'} rounded`}
+            onClick={() => setActiveCategory('equations')}
+          >
+            Equations
+          </button>
         </div>
         <div className="flex flex-wrap gap-2 p-4 border rounded bg-gray-50">
-          {getFilteredSymbols().map((symbol) => (
-            <button
-              key={symbol.id}
-              className="min-w-10 h-10 px-2 flex items-center justify-center text-lg font-bold bg-white border rounded hover:bg-blue-50"
-              onClick={() => handleSymbolDrop(symbol)}
-            >
-              {symbol.text}
-            </button>
-          ))}
+          {activeCategory === 'equations' ? (
+            commonEquations.map((equation) => (
+              <button
+                key={equation.id}
+                className="px-4 py-2 text-sm text-gray-700 appearance-none bg-white border rounded hover:bg-blue-50 flex items-center justify-center"
+                onClick={() => handleEquationClick(equation)}
+              >
+                {equation.name}
+              </button>
+            ))
+          ) : (
+            getFilteredSymbols().map((symbol) => (
+              <button
+                key={symbol.id}
+                className="min-w-10 h-10 px-2 flex items-center justify-center text-lg text-gray-700 appearance-none font-bold bg-white border rounded hover:bg-blue-50"
+                onClick={() => handleSymbolDrop(symbol)}
+              >
+                {symbol.text}
+              </button>
+            ))
+          )}
         </div>
       </div>
     );
@@ -373,6 +575,44 @@ const MathSolver = () => {
           x={5}
           y={5}
         />
+
+        {/* Clear button */}
+        <Group x={container.width - 70} y={5}>
+          <Rect
+            width={15}
+            height={15}
+            fill="#FFA726"
+            cornerRadius={2}
+            onClick={(e) => {
+              e.cancelBubble = true;
+              clearContainer(container.id);
+            }}
+            onTouchStart={(e) => {
+              e.evt.preventDefault();
+              e.cancelBubble = true;
+              clearContainer(container.id);
+            }}
+          />
+          <Text
+            text="🗑️"
+            fontSize={10}
+            fontFamily="Arial"
+            fill="white"
+            width={15}
+            height={15}
+            align="center"
+            verticalAlign="middle"
+            onClick={(e) => {
+              e.cancelBubble = true;
+              clearContainer(container.id);
+            }}
+            onTouchStart={(e) => {
+              e.evt.preventDefault();
+              e.cancelBubble = true;
+              clearContainer(container.id);
+            }}
+          />
+        </Group>
         
         {/* Remove button */}
         <Group x={container.width - 45} y={5}>
@@ -382,6 +622,11 @@ const MathSolver = () => {
             fill="red"
             cornerRadius={2}
             onClick={(e) => {
+              e.cancelBubble = true;
+              removeContainer(container.id);
+            }}
+            onTouchStart={(e) => {
+              e.evt.preventDefault();
               e.cancelBubble = true;
               removeContainer(container.id);
             }}
@@ -399,6 +644,11 @@ const MathSolver = () => {
               e.cancelBubble = true;
               removeContainer(container.id);
             }}
+            onTouchStart={(e) => {
+              e.evt.preventDefault();
+              e.cancelBubble = true;
+              removeContainer(container.id);
+            }}
           />
         </Group>
 
@@ -413,6 +663,11 @@ const MathSolver = () => {
               e.cancelBubble = true;
               setGraphContainer(container.id);
             }}
+            onTouchStart={(e) => {
+              e.evt.preventDefault();
+              e.cancelBubble = true;
+              setGraphContainer(container.id);
+            }}
           />
           <Text
             text="📈"
@@ -424,6 +679,11 @@ const MathSolver = () => {
             align="center"
             verticalAlign="middle"
             onClick={(e) => {
+              e.cancelBubble = true;
+              setGraphContainer(container.id);
+            }}
+            onTouchStart={(e) => {
+              e.evt.preventDefault();
               e.cancelBubble = true;
               setGraphContainer(container.id);
             }}
@@ -481,6 +741,11 @@ const MathSolver = () => {
               e.cancelBubble = true;
               removeSymbol(symbol.instanceId);
             }}
+            onTouchStart={(e) => {
+              e.evt.preventDefault();
+              e.cancelBubble = true;
+              removeSymbol(symbol.instanceId);
+            }}
           />
           <Text
             text="×"
@@ -492,6 +757,11 @@ const MathSolver = () => {
             align="center"
             verticalAlign="middle"
             onClick={(e) => {
+              e.cancelBubble = true;
+              removeSymbol(symbol.instanceId);
+            }}
+            onTouchStart={(e) => {
+              e.evt.preventDefault();
               e.cancelBubble = true;
               removeSymbol(symbol.instanceId);
             }}
@@ -514,16 +784,18 @@ const MathSolver = () => {
       </div>
       
       <div className="mb-4 flex space-x-4">
-        <button 
-          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+      <button 
+          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 border border-blue-600 appearance-none"
           onClick={inferEquation.bind(this, containers, placedSymbols, setEquation, setResult, setError)}
+          style={{WebkitAppearance: 'none'}}
         >
           Solve Equation
         </button>
         
         <button 
-          className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+          className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 border border-green-600 appearance-none"
           onClick={createContainer}
+          style={{WebkitAppearance: 'none'}}
         >
           Add Container
         </button>

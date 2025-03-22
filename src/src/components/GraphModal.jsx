@@ -25,15 +25,19 @@ const GraphModal = ({ expression, onClose }) => {
         }
       }
 
+      funcExpression = funcExpression.replace(/÷/g, '/');
+
       // Create a compiled function
       const compiled = math.parse(funcExpression).compile();
       
       // Generate points from -10 to 10
       const points = [];
-      for (let x = -10; x <= 10; x += 0.5) {
+      for (let x = -10; x <= 10; x += 0.1) {
         try {
           const y = compiled.evaluate({ x });
-          points.push({ x, y });
+          if (isFinite(y)) {  // Only add point if y is a finite number
+            points.push({ x, y });
+          }
         } catch (err) {
           console.error('Error evaluating point:', err);
         }
@@ -54,6 +58,11 @@ const GraphModal = ({ expression, onClose }) => {
           <h3 className="text-xl font-bold text-gray-900">Graph of Function</h3>
           <button
             onClick={onClose}
+            onTouchStart={(e) => {
+                e.evt.preventDefault();
+                e.cancelBubble = true;
+                onClose();
+              }}
             className="text-gray-500 hover:text-gray-700 p-1 hover:bg-gray-100 rounded-full transition-colors"
           >
             <X className="w-5 h-5" />
