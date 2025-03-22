@@ -884,6 +884,12 @@ const MathSolver = () => {
           toggleHighlightedContainer(container.id === highlightedContainer ? null : container.id);
           setSelectedContainer(container.id === selectedContainer ? null : container.id);
         }}
+        onTouchStart={(e) => {
+          e.evt.preventDefault();
+          e.cancelBubble = true;
+          toggleHighlightedContainer(container.id === highlightedContainer ? null : container.id);
+          setSelectedContainer(container.id === selectedContainer ? null : container.id);
+        }}
       >
         <Rect
           width={container.width}
