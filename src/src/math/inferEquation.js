@@ -189,11 +189,39 @@ const inferEquation = (containers, placedSymbols, setEquation, setResult, setErr
         // Handle case where right side is empty (e.g. "7 + 9 =")
         if (sides.length === 2 && sides[1] === "") {
           try {
-            // Just evaluate the left side expression
-            const value = math.evaluate(sides[0]);
-            setResult(`${value}`);
+            // Replace unit symbols with their values for calculation
+            let calcExpression = sides[0];
+            
+            // Remove unit symbols for calculation while preserving numbers and operators
+            calcExpression = calcExpression.replace(/([0-9.]+)\s*[a-zA-Z°]+/g, '$1');
+            
+            // Evaluate the expression
+            const value = math.evaluate(calcExpression);
+            
+            // Determine the resulting unit
+            const unitMatch = sides[0].match(/ft|mi|km|m|in|yd/g);
+            let resultUnit = '';
+            
+            if (unitMatch) {
+              // Simple unit cancellation - last unit wins if no cancellation
+              const units = unitMatch.reduce((acc, unit) => {
+                acc[unit] = (acc[unit] || 0) + 1;
+                return acc;
+              }, {});
+              
+              // Find remaining unit after cancellation
+              for (const [unit, count] of Object.entries(units)) {
+                if (count % 2 !== 0) {
+                  resultUnit = unit;
+                  break;
+                }
+              }
+            }
+            
+            setResult(`${value} ${resultUnit}`);
             setError('');
             return;
+            
           } catch (calcErr) {
             console.error('Calculation error:', calcErr);
             setError(`Error calculating result: ${calcErr.message}`);
