@@ -261,6 +261,7 @@ const MathSolver = () => {
   // State for equation and result
   const [equation, setEquation] = useState('');
   const [result, setResult] = useState(null);
+  const [simplifyMessage, setSimplifyMessage] = useState(''); // State for simplification messages
   // State for error messages
   const [error, setError] = useState('');
   // State for selected container (for creating new containers)
@@ -586,6 +587,89 @@ const MathSolver = () => {
       return unitSymbols.filter(sym => sym.category === activeCategory);
     }
   };
+
+  const simplifyContainer = (containerId) => {
+    try {
+      // Get symbols in container
+      const symbols = placedSymbols
+        .filter(sym => sym.containerId === containerId)
+        .sort((a, b) => a.x - b.x);
+  
+      // Find the first pair of symbols we can simplify
+      for (let i = 0; i < symbols.length - 1; i++) {
+        const current = symbols[i];
+        const next = symbols[i + 1];
+        const afterNext = symbols[i + 2];
+  
+        // Case 1: Number +/- Number
+        if (current.type === 'number' && afterNext?.type === 'number' && 
+            (next.text === '+' || next.text === '-')) {
+          const num1 = parseInt(current.text);
+          const num2 = parseInt(afterNext.text);
+          const result = next.text === '+' ? num1 + num2 : num1 - num2;
+          
+          // Create new combined symbol
+          const newSymbol = {
+            id: `number_${Date.now()}`,
+            instanceId: `number_${Date.now()}_${Math.random()}`,
+            type: 'number',
+            text: result.toString(),
+            x: current.x,
+            y: current.y,
+            containerId
+          };
+  
+          // Update placed symbols
+          setPlacedSymbols(prev => [
+            ...prev.filter(s => 
+              s.instanceId !== current.instanceId && 
+              s.instanceId !== next.instanceId && 
+              s.instanceId !== afterNext.instanceId
+            ),
+            newSymbol
+          ]);
+  
+          setSimplifyMessage(`Combined ${num1} ${next.text} ${num2} = ${result}`);
+          return;
+        }
+  
+        // Case 2: Same variable being added/subtracted (x - x or x + -x)
+        if (current.type === 'variable' && afterNext?.type === 'variable' &&
+            current.text === afterNext.text && 
+            (next.text === '+' || next.text === '-')) {
+          if (next.text === '-') {
+            // Create new zero symbol
+            const newSymbol = {
+              id: `number_${Date.now()}`,
+              instanceId: `number_${Date.now()}_${Math.random()}`,
+              type: 'number',
+              text: '0',
+              x: current.x,
+              y: current.y,
+              containerId
+            };
+  
+            setPlacedSymbols(prev => [
+              ...prev.filter(s => 
+                s.instanceId !== current.instanceId && 
+                s.instanceId !== next.instanceId && 
+                s.instanceId !== afterNext.instanceId
+              ),
+              newSymbol
+            ]);
+  
+            setSimplifyMessage(`Cancelled ${current.text} - ${current.text} = 0`);
+            return;
+          }
+        }
+      }
+  
+      setSimplifyMessage('No more simplifications found');
+    } catch (error) {
+      console.error('Simplification error:', error);
+      setError('Error during simplification: ' + error.message);
+    }
+  };
   
   // Render symbols toolbar
   const renderSymbolsToolbar = () => {
@@ -697,6 +781,45 @@ const MathSolver = () => {
           x={5}
           y={5}
         />
+
+        {container.type !== 'eqop' && (
+          <Group x={container.width - 125} y={5}>
+            <Rect
+              width={40}
+              height={15}
+              fill="#4CAF50"
+              cornerRadius={2}
+              onClick={(e) => {
+                e.cancelBubble = true;
+                simplifyContainer(container.id);
+              }}
+              onTouchStart={(e) => {
+                e.evt.preventDefault();
+                e.cancelBubble = true;
+                simplifyContainer(container.id);
+              }}
+            />
+            <Text
+              text="Simplify"
+              fontSize={10}
+              fontFamily="Arial"
+              fill="white"
+              width={40}
+              height={15}
+              align="center"
+              verticalAlign="middle"
+              onClick={(e) => {
+                e.cancelBubble = true;
+                simplifyContainer(container.id);
+              }}
+              onTouchStart={(e) => {
+                e.evt.preventDefault();
+                e.cancelBubble = true;
+                simplifyContainer(container.id);
+              }}
+            />
+          </Group>
+        )}
 
         {/* Apply button for EqOp containers */}
         {container.type === 'eqop' && (
@@ -975,6 +1098,12 @@ const MathSolver = () => {
         <div className="mb-4 p-3 bg-blue-50 border border-blue-200 text-gray-900 rounded">
           <p className="font-medium">Inferred Equation: {equation}</p>
           {result && <p className="mt-2">Result: {result}</p>}
+        </div>
+      )}
+
+    {simplifyMessage && (
+        <div className="mb-4 p-3 bg-green-50 border border-green-200 text-gray-900 rounded">
+          <p className="font-medium">{simplifyMessage}</p>
         </div>
       )}
       
