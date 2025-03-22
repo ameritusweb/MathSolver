@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Stage, Layer, Text, Group, Rect, Line } from 'react-konva';
 import inferEquation from '../math/inferEquation';
 import GraphModal from './GraphModal';
+import { MinusCircle } from 'lucide-react';
 
 const MathSolver = () => {
 
@@ -258,6 +259,7 @@ const MathSolver = () => {
     { id: 'container_1', x: 50, y: 40, width: 400, height: 160, color: '#e8f4f8', type: 'equation' },
     { id: 'container_2', x: 50, y: 220, width: 400, height: 160, color: '#f0f8e8', type: 'equation' },
   ]);
+  const [isSignFlipped, setIsSignFlipped] = useState(false);
   // State for equation and result
   const [equation, setEquation] = useState('');
   const [result, setResult] = useState(null);
@@ -266,6 +268,17 @@ const MathSolver = () => {
   const [error, setError] = useState('');
   // State for selected container (for creating new containers)
   const [selectedContainer, setSelectedContainer] = useState(null);
+
+  const [highlightedContainer, setHighlightedContainer] = useState(null);
+
+  const toggleHighlightedContainer = (containerId) => {
+    if (highlightedContainer === containerId) { 
+      setHighlightedContainer(null); // Remove highlight if already highlighted
+    } else {
+      setHighlightedContainer(containerId); // Highlight the selected container
+    }
+  }
+
   // State for active symbol category
   const [activeCategory, setActiveCategory] = useState('math'); // 'math', 'length', 'mass', 'volume', 'temperature', 'time'
   
@@ -336,6 +349,33 @@ const MathSolver = () => {
   
   // Handle dropping a symbol onto the canvas
   const handleSymbolDrop = (symbol) => {
+    let modifiedSymbol = { ...symbol };
+    if (isSignFlipped && symbol.type === 'number' && !isNaN(parseFloat(symbol.text))) {
+      modifiedSymbol.text = (-parseFloat(symbol.text)).toString();
+    }
+
+    if (highlightedContainer) {
+      // Find the highlighted container
+      const container = containers.find(c => c.id === highlightedContainer);
+      if (container) {
+        // Calculate center position of the container
+        const centerX = container.x + container.width / 2;
+        const centerY = container.y + container.height / 2;
+        
+        // Create a new placed symbol at the container's center
+        const newSymbol = {
+          ...modifiedSymbol,
+          instanceId: `${modifiedSymbol.id}_${Date.now()}`,
+          x: centerX,
+          y: centerY,
+          containerId: container.id
+        };
+        
+        setPlacedSymbols([...placedSymbols, newSymbol]);
+        return;
+      }
+    }
+
     // Get stage center position for initial placement
     const stage = stageRef.current;
     const centerX = stage.width() / 2;
@@ -343,11 +383,11 @@ const MathSolver = () => {
     
     // Create a new placed symbol with a unique instance ID
     const newSymbol = {
-      ...symbol,
-      instanceId: `${symbol.id}_${Date.now()}`,
+      ...modifiedSymbol,
+      instanceId: `${modifiedSymbol.id}_${Date.now()}`,
       x: centerX,
       y: centerY,
-      containerId: null, // Not in any container yet
+      containerId: null,
     };
     
     setPlacedSymbols([...placedSymbols, newSymbol]);
@@ -743,12 +783,21 @@ const MathSolver = () => {
     return (
       <div className="mb-4">
         <div className="flex mb-2 space-x-2">
-          <button
-            className={`px-3 py-1 ${activeCategory === 'math' ? 'text-gray-800' : 'text-gray-400'} text-lg appearance-none font-bold bg-white border rounded hover:bg-blue-50`}
-            onClick={() => setActiveCategory('math')}
-          >
-            Math
-          </button>
+        <div className="flex items-center">
+            <button
+              className={`px-3 py-1 ${activeCategory === 'math' ? 'text-gray-800' : 'text-gray-400'} text-lg appearance-none font-bold bg-white border rounded-l hover:bg-blue-50`}
+              onClick={() => setActiveCategory('math')}
+            >
+              Math
+            </button>
+            <button
+              className={`px-2 py-1 ${activeCategory === 'math' ? 'text-gray-800' : 'text-gray-400'} text-lg appearance-none font-bold bg-white border-t border-b border-r rounded-r hover:bg-blue-50 flex items-center ${isSignFlipped ? 'bg-blue-100' : ''}`}
+              onClick={() => setIsSignFlipped(!isSignFlipped)}
+              title={isSignFlipped ? "Signs are flipped (numbers will be negative)" : "Signs are normal (numbers will be positive)"}
+            >
+              <MinusCircle className="w-6 h-6" />
+            </button>
+          </div>
           <button
             className={`px-3 py-1 ${activeCategory === 'length' ? 'text-gray-800' : 'text-gray-400'} text-lg appearance-none font-bold bg-white border rounded hover:bg-blue-50`}
             onClick={() => setActiveCategory('length')}
@@ -810,7 +859,9 @@ const MathSolver = () => {
                 className="min-w-10 h-10 px-2 flex items-center justify-center text-lg text-gray-700 appearance-none font-bold bg-white border rounded hover:bg-blue-50"
                 onClick={() => handleSymbolDrop(symbol)}
               >
-                {symbol.text}
+                {symbol.type === 'number' && isSignFlipped && !isNaN(parseFloat(symbol.text)) 
+                  ? (-parseFloat(symbol.text)).toString() 
+                  : symbol.text}
               </button>
             ))
           )}
@@ -828,14 +879,18 @@ const MathSolver = () => {
         y={container.y}
         draggable
         onDragMove={(e) => handleContainerDragMove(e, container.id)}
-        onClick={() => setSelectedContainer(container.id === selectedContainer ? null : container.id)}
+        onClick={(e) => {
+          e.cancelBubble = true;
+          toggleHighlightedContainer(container.id === highlightedContainer ? null : container.id);
+          setSelectedContainer(container.id === selectedContainer ? null : container.id);
+        }}
       >
         <Rect
           width={container.width}
           height={container.height}
           fill={container.color}
-          stroke={selectedContainer === container.id ? "#3498db" : "#95a5a6"}
-          strokeWidth={2}
+          stroke={highlightedContainer === container.id ? "#f1c40f" : (selectedContainer === container.id ? "#3498db" : "#95a5a6")}
+          strokeWidth={highlightedContainer === container.id ? 3 : 2}
           cornerRadius={5}
         />
         
@@ -1128,9 +1183,9 @@ const MathSolver = () => {
       <h2 className="text-2xl text-gray-900 font-bold mb-4">Interactive Math & Unit Conversion Solver</h2>
       
       <div className="mb-4">
-        <p className="text-sm text-gray-600 mb-2">
+      <p className="text-sm text-gray-600 mb-2">
           Click on symbols to add them to the canvas. Drag symbols into containers to organize your expressions.
-          Switch between categories using the tabs above the symbols.
+          Switch between categories using the tabs above the symbols. Use the +/- toggle next to Math to flip number signs.
         </p>
         {renderSymbolsToolbar()}
       </div>
