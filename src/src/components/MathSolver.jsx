@@ -596,7 +596,7 @@ const MathSolver = () => {
         .sort((a, b) => a.x - b.x);
   
       // Find the first pair of symbols we can simplify
-      for (let i = 0; i < symbols.length - 3; i++) {
+      for (let i = 0; i < symbols.length - 1; i++) {
         const current = symbols[i];
         const next = symbols[i + 1];
         const afterNext = symbols[i + 2];
@@ -607,8 +607,31 @@ const MathSolver = () => {
           // Skip this position as it's part of a variable expression
           continue;
         }
+
+        // Case 1: Variable followed by +0 or 0+
+        if (current.type === 'variable' && next?.text === '+' && afterNext?.text === '0') {
+          // Remove the + and 0, keep the variable
+          setPlacedSymbols(prev => prev.filter(s => 
+            s.instanceId !== next.instanceId && 
+            s.instanceId !== afterNext.instanceId
+          ));
+          setSimplifyMessage(`Simplified ${current.text} + 0 to ${current.text}`);
+          return;
+        }
+
+        // Case 2: Stand-alone +0 or 0+ pattern (when not following a variable)
+        if ((current.text === '+' && next?.text === '0') || 
+            (current.text === '0' && next?.text === '+')) {
+          // Remove both tokens
+          setPlacedSymbols(prev => prev.filter(s => 
+            s.instanceId !== current.instanceId && 
+            s.instanceId !== next.instanceId
+          ));
+          setSimplifyMessage(`Removed redundant "+0"`);
+          return;
+        }
   
-        // Case 1: Cancelling multiply/divide operations (×2 ÷2 or ÷2 ×2)
+        // Case 3: Cancelling multiply/divide operations (×2 ÷2 or ÷2 ×2)
         if ((next?.type === 'number' && afterNext?.type === 'operator' && afterAfterNext?.type === 'number') &&
             ((current.text === '×' && afterNext.text === '÷') || (current.text === '÷' && afterNext.text === '×')) &&
             (next.text === afterAfterNext.text)) {
@@ -623,7 +646,7 @@ const MathSolver = () => {
           return;
         }
   
-        // Case 2: Number +/- Number with no variable before it
+        // Case 4: Number +/- Number with no variable before it
         if (current.type === 'number' && afterNext?.type === 'number' && 
             (next.text === '+' || next.text === '-')) {
           // Check we're not part of a variable expression
@@ -658,19 +681,7 @@ const MathSolver = () => {
           }
         }
   
-        // Case 3: "+0" or "0+" pattern
-        if ((current.text === '+' && next?.text === '0') || 
-            (current.text === '0' && next?.text === '+')) {
-          // Remove both tokens
-          setPlacedSymbols(prev => prev.filter(s => 
-            s.instanceId !== current.instanceId && 
-            s.instanceId !== next.instanceId
-          ));
-          setSimplifyMessage(`Removed redundant "+0"`);
-          return;
-        }
-  
-        // Case 4: Same variable being added/subtracted (x - x or x + -x)
+        // Case 5: Same variable being added/subtracted (x - x or x + -x)
         if (current.type === 'variable' && afterNext?.type === 'variable' &&
             current.text === afterNext.text && 
             (next.text === '+' || next.text === '-')) {
@@ -700,7 +711,7 @@ const MathSolver = () => {
           }
         }
   
-        // Case 5: Cancelling terms after a variable (y -2 +2 → y)
+        // Case 6: Cancelling terms after a variable (y -2 +2 → y)
         if (current.type === 'variable' && 
             next?.text === '-' && 
             afterNext?.type === 'number' &&
