@@ -90,8 +90,15 @@ const inferEquation = (containers, placedSymbols, unitSymbols, setEquation, setR
         
         // If it's a percentage calculation, handle it specially
         if (isPercentageExpression) {
+          let expression = '';
           const percentageEquation = handlePercentageExpression(symbols);
           expression = percentageEquation;
+
+          expression = expression.trim();
+          
+          if (expression.includes('=')) {
+            equations.push(expression);
+          }
         } else {
           // Simple left-to-right parsing to create expression
           let expression = '';
