@@ -85,93 +85,89 @@ const inferEquation = (containers, placedSymbols, unitSymbols, setEquation, setR
           return;
         }
         
-        // Simple left-to-right parsing to create expression
-        let expression = '';
-        let units = [];
-        let currentNumber = '';
-        
         // Check if this container has a percentage calculation pattern
-      const isPercentageExpression = detectPercentageExpression(symbols);
-      
-      // If it's a percentage calculation, handle it specially
-      if (isPercentageExpression) {
-        const percentageEquation = handlePercentageExpression(symbols);
-        expression = percentageEquation;
-      } else {
+        const isPercentageExpression = detectPercentageExpression(symbols);
+        
+        // If it's a percentage calculation, handle it specially
+        if (isPercentageExpression) {
+          const percentageEquation = handlePercentageExpression(symbols);
+          expression = percentageEquation;
+        } else {
+          // Simple left-to-right parsing to create expression
+          let expression = '';
+          let units = [];
+          let currentNumber = '';
+          
+          symbols.forEach((sym, index) => {
+            // Track variables
+            if (sym.type === 'variable') {
+              variables.add(sym.text);
+            }
 
-        symbols.forEach((sym, index) => {
-          // Track variables
-          if (sym.type === 'variable') {
-            variables.add(sym.text);
-          }
-
-          // Handle units specially
-          if (sym.type === 'unit') {
-            units.push({
-              unit: sym.text,
-              category: sym.category,
-              conversionBase: sym.conversionBase,
-              offset: sym.offset || 0,
-              position: expression.length
-            });
-            expression += sym.text;
-          }
-          else if (sym.type === 'constant') {
-            // Add the current number if we have one
-            if (currentNumber) {
-              expression += currentNumber;
+            // Handle units specially
+            if (sym.type === 'unit') {
+              units.push({
+                unit: sym.text,
+                category: sym.category,
+                conversionBase: sym.conversionBase,
+                offset: sym.offset || 0,
+                position: expression.length
+              });
+              expression += sym.text;
+            }
+            else if (sym.type === 'constant') {
+              if (currentNumber) {
+                expression += currentNumber;
+                currentNumber = '';
+              }
+              
+              if (sym.text === 'π') {
+                expression += 'pi';
+              } else {
+                expression += sym.text;
+              }
+            }
+            else if (sym.type === 'operator') {
+              if (sym.text === '×') {
+                expression += '*';
+              } else if (sym.text === '÷') {
+                expression += '/';
+              } else {
+                expression += sym.text;
+              }
+              currentNumber = '';
+            } else if (sym.type === 'function') {
+              if (sym.text === '√') {
+                expression += 'sqrt';
+              } else {
+                expression += sym.text;
+              }
+              currentNumber = '';
+            } else if (sym.type === 'number' || sym.type === 'variable') {
+              if (sym.type === 'number') {
+                currentNumber += sym.text;
+              }
+              expression += sym.text;
+            } else {
+              expression += sym.text;
               currentNumber = '';
             }
             
-            // Replace π with math.pi or use the symbol as is for 'e'
-            if (sym.text === 'π') {
-              expression += 'pi';
-            } else {
-              expression += sym.text;
+            if (index < symbols.length - 1) {
+              expression += ' ';
             }
-          }
-          // Handle special cases
-          else if (sym.type === 'operator') {
-            if (sym.text === '×') {
-              expression += '*';
-            } else if (sym.text === '÷') {
-              expression += '/';
-            } else {
-              expression += sym.text;
-            }
-            currentNumber = '';
-          } else if (sym.type === 'function') {
-            if (sym.text === '√') {
-              expression += 'sqrt';
-            } else {
-              expression += sym.text;
-            }
-            currentNumber = '';
-          } else if (sym.type === 'number' || sym.type === 'variable') {
-            if (sym.type === 'number') {
-              currentNumber += sym.text;
-            }
-            expression += sym.text;
-          } else {
-            expression += sym.text;
-            currentNumber = '';
-          }
-          
-          if (index < symbols.length - 1) {
-            expression += ' ';
-          }
-        });
-      }
+          });
 
-        expression = expression.trim();
-        containerExpressions[containerId] = expression;
-        containerUnits[containerId] = units;
-        
-        if (expression.includes('=')) {
-          equations.push(expression);
+          expression = expression.trim();
+          containerExpressions[containerId] = expression;
+          containerUnits[containerId] = units;
+          
+          if (expression.includes('=')) {
+            equations.push(expression);
+          }
         }
       });
-      
+
       // If no equations found, show error
       if (equations.length === 0) {
         setError('No equation found. Add an equals sign (=) to a container.');
@@ -180,86 +176,129 @@ const inferEquation = (containers, placedSymbols, unitSymbols, setEquation, setR
         return;
       }
 
-      // First check if we have a system of equations
-      // Inside your inferEquation function, replace the system solving section with this:
+      console.log('Found equations:', equations);
+      console.log('Found variables:', Array.from(variables));
 
-if (equations.length > 1 && variables.size > 0) {
-  setEquation(equations.join(' and '));
-  
-  try {
-    // Create a scope object to store variable values
-    const scope = {};
-    
-    // First pass: find direct assignments (e.g., x = 2)
-    equations.forEach(eq => {
-      const [left, right] = eq.split('=').map(side => side.trim());
-      // Check if right side is a number
-      if (/^\d+$/.test(right)) {
-        scope[left.trim()] = parseFloat(right);
-      }
-      // Check if left side is a number
-      if (/^\d+$/.test(left)) {
-        scope[right.trim()] = parseFloat(left);
-      }
-    });
-    
-    // Second pass: handle variable assignments (e.g., y = x)
-    let changed = true;
-    while (changed) {
-      changed = false;
-      equations.forEach(eq => {
-        const [left, right] = eq.split('=').map(side => side.trim());
+      // Handle system of equations
+      if (equations.length > 1 && variables.size > 0) {
+        setEquation(equations.join(' and '));
         
-        // If right side is a known variable, assign its value to left side
-        if (scope[right] !== undefined && scope[left] === undefined) {
-          scope[left] = scope[right];
-          changed = true;
-        }
-        // If left side is a known variable, assign its value to right side
-        if (scope[left] !== undefined && scope[right] === undefined) {
-          scope[right] = scope[left];
-          changed = true;
-        }
-        
-        // Try to evaluate more complex expressions
         try {
-          if (scope[left] === undefined) {
-            const rightValue = math.evaluate(right, scope);
-            if (typeof rightValue === 'number') {
-              scope[left] = rightValue;
-              changed = true;
+          const scope = {};
+          
+          // First pass: find direct assignments (e.g., x = 9)
+          equations.forEach(eq => {
+            console.log('\nProcessing equation for direct assignment:', eq);
+            const [left, right] = eq.split('=').map(side => side.trim());
+            console.log('Left:', left, 'Right:', right);
+            
+            if (/^\d+$/.test(right)) {
+              scope[left.trim()] = parseFloat(right);
+              console.log('Found direct assignment:', left.trim(), '=', parseFloat(right));
             }
-          }
-          if (scope[right] === undefined) {
-            const leftValue = math.evaluate(left, scope);
-            if (typeof leftValue === 'number') {
-              scope[right] = leftValue;
-              changed = true;
+            if (/^\d+$/.test(left)) {
+              scope[right.trim()] = parseFloat(left);
+              console.log('Found direct assignment:', right.trim(), '=', parseFloat(left));
             }
-          }
-        } catch (e) {
-          // Skip if we can't evaluate yet
+          });
+
+          console.log('\nAfter first pass, known values:', scope);
+
+          // Second pass: substitute and solve
+          equations.forEach(eq => {
+            console.log('\nProcessing equation:', eq);
+            const [left, right] = eq.split('=').map(side => side.trim());
+            
+            // Skip equations that are just assignments we already handled
+            if ((/^[a-zA-Z]$/.test(left) && /^\d+$/.test(right)) || 
+                (/^[a-zA-Z]$/.test(right) && /^\d+$/.test(left))) {
+              console.log('Skipping already handled assignment');
+              return;
+            }
+
+            // Replace all known variables with their values
+            let newLeft = left;
+            let newRight = right;
+            Object.entries(scope).forEach(([variable, value]) => {
+              const regex = new RegExp(variable + '(?![a-zA-Z])', 'g');
+              newLeft = newLeft.replace(regex, value.toString());
+              newRight = newRight.replace(regex, value.toString());
+            });
+            console.log('After substitution:', newLeft, '=', newRight);
+
+            // Split into parts by + and -
+            const leftParts = newLeft.split(/([+\-])/);
+            const rightParts = newRight.split(/([+\-])/);
+            console.log('Parts:', { leftParts, rightParts });
+
+            // Find variable term and sum constants
+            let variableTerm = null;
+            let constantTerms = 0;
+
+            // Process left side
+            for (let i = 0; i < leftParts.length; i++) {
+              const part = leftParts[i].trim();
+              if (!part || part === '+' || part === '-') continue;
+              console.log('Processing left part:', part);
+              
+              if (part.match(/[a-zA-Z]/)) {
+                variableTerm = { side: 'left', term: part };
+                console.log('Found variable on left:', part);
+              } else if (!isNaN(part)) {
+                const value = parseInt(part);
+                const isNegative = i > 0 && leftParts[i-1] === '-';
+                constantTerms += isNegative ? -value : value;
+                console.log('Added constant from left:', isNegative ? -value : value);
+              }
+            }
+
+            // Process right side
+            for (let i = 0; i < rightParts.length; i++) {
+              const part = rightParts[i].trim();
+              if (!part || part === '+' || part === '-') continue;
+              console.log('Processing right part:', part);
+              
+              if (part.match(/[a-zA-Z]/)) {
+                variableTerm = { side: 'right', term: part };
+                console.log('Found variable on right:', part);
+              } else if (!isNaN(part)) {
+                const value = parseInt(part);
+                const isNegative = i > 0 && rightParts[i-1] === '-';
+                constantTerms -= isNegative ? -value : value;
+                console.log('Subtracted constant from right:', isNegative ? -value : value);
+              }
+            }
+
+            console.log('Analysis:', { variableTerm, constantTerms });
+
+            // Solve for variable if found
+            if (variableTerm) {
+              const variable = variableTerm.term.match(/[a-zA-Z]+/)[0];
+              const value = variableTerm.side === 'left' ? -constantTerms : constantTerms;
+              scope[variable] = value;
+              console.log('Solved:', variable, '=', value);
+            }
+          });
+
+          console.log('\nFinal scope:', scope);
+
+          // Format results
+          const results = Array.from(variables).sort().map(variable => {
+            if (scope[variable] !== undefined) {
+              return `${variable} = ${scope[variable]}`;
+            }
+            return `${variable} = unknown`;
+          });
+          
+          setResult(results.join(', '));
+          setError('');
+          return;
+        } catch (err) {
+          console.error('Error solving system:', err);
+          setError('Error solving system of equations: ' + err.message);
+          return;
         }
-      });
-    }
-    
-    // Format results
-    const results = Array.from(variables).sort().map(variable => {
-      if (scope[variable] !== undefined) {
-        return `${variable} = ${scope[variable]}`;
       }
-      return `${variable} = unknown`;
-    });
-    
-    if (results.length > 0) {
-      setResult(results.join(', '));
-      setError('');
-      return;
-    }
-  } catch (sysErr) {
-    console.error('System solving error:', sysErr);
-  }
-}
 
       // If not a system or system solving failed, proceed with original logic
       let mainEquation = equations[0];
@@ -268,11 +307,8 @@ if (equations.length > 1 && variables.size > 0) {
       );
       
       // Process the equation to make it solvable
-      // Replace function followed by parentheses
       let processedEquation = mainEquation.replace(/(\w+)\s+\(/g, '$1(');
-      
       processedEquation = processedEquation.replace(/(\d)\s+(\d)/g, '$1$2');
-
       processedEquation = processedEquation.replace(/(\d)\s+\.\s+(\d)/g, '$1.$2');
 
       // Check for unit conversion
@@ -389,27 +425,18 @@ if (equations.length > 1 && variables.size > 0) {
         // Handle case where right side is empty (e.g. "7 + 9 =")
         if (sides.length === 2 && sides[1] === "") {
           try {
-            // Replace unit symbols with their values for calculation
             let calcExpression = sides[0];
-            
-            // Remove unit symbols for calculation while preserving numbers and operators
             calcExpression = calcExpression.replace(/([0-9.]+)\s*[a-zA-Z°]+/g, '$1');
-            
-            // Evaluate the expression
             const value = math.evaluate(calcExpression);
-            
-            // Determine the resulting unit
             const unitMatch = sides[0].match(/ft|mi|km|m|in|yd/g);
             let resultUnit = '';
             
             if (unitMatch) {
-              // Simple unit cancellation - last unit wins if no cancellation
               const units = unitMatch.reduce((acc, unit) => {
                 acc[unit] = (acc[unit] || 0) + 1;
                 return acc;
               }, {});
               
-              // Find remaining unit after cancellation
               for (const [unit, count] of Object.entries(units)) {
                 if (count % 2 !== 0) {
                   resultUnit = unit;
