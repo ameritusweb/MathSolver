@@ -116,6 +116,20 @@ const inferEquation = (containers, placedSymbols, unitSymbols, setEquation, setR
             });
             expression += sym.text;
           }
+          else if (sym.type === 'constant') {
+            // Add the current number if we have one
+            if (currentNumber) {
+              expression += currentNumber;
+              currentNumber = '';
+            }
+            
+            // Replace π with math.pi or use the symbol as is for 'e'
+            if (sym.text === 'π') {
+              expression += 'pi';
+            } else {
+              expression += sym.text;
+            }
+          }
           // Handle special cases
           else if (sym.type === 'operator') {
             if (sym.text === '×') {

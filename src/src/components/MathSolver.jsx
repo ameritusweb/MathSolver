@@ -168,6 +168,8 @@ const MathSolver = () => {
     { id: 'equals', type: 'operator', text: '=' },
     { id: 'of', type: 'operator', text: 'of' }, // Added the "of" operator
     { id: 'percent', type: 'operator', text: '%' }, // Added the "%" operator
+    { id: 'pi', type: 'constant', text: 'π' },  // Added pi constant
+    { id: 'e', type: 'constant', text: 'e' },   // Added e constant
     { id: '1', type: 'number', text: '1' },
     { id: '2', type: 'number', text: '2' },
     { id: '3', type: 'number', text: '3' },
