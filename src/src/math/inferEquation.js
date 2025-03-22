@@ -465,25 +465,39 @@ const inferEquation = (containers, placedSymbols, unitSymbols, setEquation, setR
         
         // Check if this is solvable
         if (exprToSolve.includes('x') && !exprToSolve.includes('y')) {
-          // Try to solve for x numerically
-          const compiled = math.parse(exprToSolve).compile();
-          
-          // Try to find where the expression equals zero
-          let solution = null;
-          for (let x = -100; x <= 100; x += 0.01) {
-            const value = compiled.evaluate({ x });
-            if (Math.abs(value) < 0.001) {
-              solution = x;
-              break;
-            }
-          }
-          
-          if (solution !== null) {
-            setResult(`x = ${parseFloat(solution.toFixed(4))}`);
-          } else {
-            setResult('No solution found in range [-100, 100]');
+          try {
+            // Evaluate the non-x part of the expression
+            const rightSide = math.evaluate(exprToSolve.replace(/x/g, '0')) * -1;
+            setResult(`x = ${parseFloat(rightSide.toFixed(4))}`);
+          } catch (err) {
+            console.error('Error solving for x:', err);
+            setResult('Unable to solve equation');
           }
         } else if (!exprToSolve.includes('x') && !exprToSolve.includes('y')) {
+
+          const [leftSide, rightSide] = sides;
+
+          if (leftSide.includes('sqrt') || rightSide.includes('sqrt') || 
+              leftSide.includes('√') || rightSide.includes('√')) {
+            try {
+              // Handle sqrt symbol
+              const processedLeft = leftSide.replace(/√/g, 'sqrt');
+              const processedRight = rightSide.replace(/√/g, 'sqrt');
+              
+              // Evaluate each side
+              const leftValue = math.evaluate(processedLeft);
+              const rightValue = math.evaluate(processedRight);
+              
+              setResult(`${leftValue} = ${rightValue}`);
+              setError('');
+              return;
+            } catch (err) {
+              console.error('Error evaluating sqrt expression:', err);
+              setError('Error evaluating expression with square root');
+              return;
+            }
+          }
+
           // If expression has no variables, just evaluate it
           const value = math.evaluate(exprToSolve);
           setResult(Math.abs(value) < 0.001 ? 'Equation is valid' : 'Equation is invalid');
