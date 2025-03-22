@@ -601,7 +601,19 @@ const MathSolver = () => {
         const next = symbols[i + 1];
         const afterNext = symbols[i + 2];
   
-        // Case 1: Number +/- Number
+        // Case 1: "+0" or "0+" pattern
+        if ((current.text === '+' && next?.text === '0') || 
+            (current.text === '0' && next?.text === '+')) {
+          // Remove both tokens
+          setPlacedSymbols(prev => prev.filter(s => 
+            s.instanceId !== current.instanceId && 
+            s.instanceId !== next.instanceId
+          ));
+          setSimplifyMessage(`Removed redundant "+0"`);
+          return;
+        }
+  
+        // Case 2: Number +/- Number
         if (current.type === 'number' && afterNext?.type === 'number' && 
             (next.text === '+' || next.text === '-')) {
           const num1 = parseInt(current.text);
@@ -633,7 +645,7 @@ const MathSolver = () => {
           return;
         }
   
-        // Case 2: Same variable being added/subtracted (x - x or x + -x)
+        // Case 3: Same variable being added/subtracted (x - x or x + -x)
         if (current.type === 'variable' && afterNext?.type === 'variable' &&
             current.text === afterNext.text && 
             (next.text === '+' || next.text === '-')) {
