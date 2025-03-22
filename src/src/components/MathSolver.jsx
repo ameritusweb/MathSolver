@@ -140,7 +140,9 @@ const MathSolver = () => {
         { id: 'y', type: 'variable', text: 'y' },
         { id: 'equals', type: 'operator', text: '=' },
         { id: 'sqrt', type: 'function', text: '√' },
-        { id: 'x', type: 'variable', text: 'x' }
+        { id: 'open_paren', type: 'grouping', text: '(' },
+        { id: 'x', type: 'variable', text: 'x' },
+        { id: 'close_paren', type: 'grouping', text: ')' }
       ]
     },
     {
@@ -253,8 +255,8 @@ const MathSolver = () => {
   const [placedSymbols, setPlacedSymbols] = useState([]);
   // State for containers/rectangles
   const [containers, setContainers] = useState([
-    { id: 'container_1', x: 50, y: 40, width: 400, height: 160, color: '#e8f4f8' },
-    { id: 'container_2', x: 50, y: 220, width: 400, height: 160, color: '#f0f8e8' },
+    { id: 'container_1', x: 50, y: 40, width: 400, height: 160, color: '#e8f4f8', type: 'equation' },
+    { id: 'container_2', x: 50, y: 220, width: 400, height: 160, color: '#f0f8e8', type: 'equation' },
   ]);
   // State for equation and result
   const [equation, setEquation] = useState('');
@@ -419,17 +421,133 @@ const MathSolver = () => {
   };
   
   // Create a new container
-  const createContainer = () => {
+  const createContainer = (type = 'equation') => {
     const newContainer = {
       id: `container_${Date.now()}`,
       x: 50,
       y: 350,
       width: 400,
       height: 160,
-      color: `hsl(${Math.random() * 360}, 70%, 90%)`,
+      color: type === 'eqop' ? '#FFE4E1' : `hsl(${Math.random() * 360}, 70%, 90%)`,
+      type: type
     };
     
     setContainers([...containers, newContainer]);
+  };
+
+  const createEqOpContainer = () => {
+    createContainer('eqop');
+  };
+
+  // Apply EqOp container operation to nearest equation container
+  const applyEqOp = (eqOpContainerId) => {
+    try {
+      // Get the operation from the EqOp container
+      const eqOpSymbols = placedSymbols
+        .filter(sym => sym.containerId === eqOpContainerId)
+        .sort((a, b) => a.x - b.x);
+
+      if (eqOpSymbols.length < 2) {
+        setError('EqOp container must have an operation and a number');
+        return;
+      }
+
+      // Find the operator and number
+      const operator = eqOpSymbols[0].text;
+      const number = eqOpSymbols[1].text;
+
+      // Find the nearest equation container
+      const eqOpContainer = containers.find(c => c.id === eqOpContainerId);
+      let nearestContainer = null;
+      let shortestDistance = Infinity;
+
+      containers.forEach(container => {
+        if (container.type === 'equation') {
+          const distance = Math.sqrt(
+            Math.pow(container.x - eqOpContainer.x, 2) + 
+            Math.pow(container.y - eqOpContainer.y, 2)
+          );
+          if (distance < shortestDistance) {
+            shortestDistance = distance;
+            nearestContainer = container;
+          }
+        }
+      });
+
+      if (!nearestContainer) {
+        setError('No equation container found');
+        return;
+      }
+
+      // Get the equation symbols
+      const equationSymbols = placedSymbols
+        .filter(sym => sym.containerId === nearestContainer.id)
+        .sort((a, b) => a.x - b.x);
+
+      // Find the equals sign position
+      const equalsIndex = equationSymbols.findIndex(sym => sym.text === '=');
+      if (equalsIndex === -1) {
+        setError('No equals sign found in equation');
+        return;
+      }
+
+      // Split into left and right sides
+      const leftSide = equationSymbols.slice(0, equalsIndex);
+      const rightSide = equationSymbols.slice(equalsIndex + 1);
+
+      // Create new symbols for the operation
+      const createOpSymbol = (text, type) => ({
+        id: `${text}_${Date.now()}`,
+        instanceId: `${text}_${Date.now()}_${Math.random()}`,
+        text,
+        type,
+        containerId: nearestContainer.id
+      });
+
+      // Add operation symbols to both sides
+      let newSymbols;
+      if (operator === '+' || operator === '-') {
+        newSymbols = [
+          ...leftSide,
+          createOpSymbol(operator, 'operator'),
+          createOpSymbol(number, 'number'),
+          createOpSymbol('=', 'operator'),
+          ...rightSide,
+          createOpSymbol(operator, 'operator'),
+          createOpSymbol(number, 'number')
+        ];
+      } else if (operator === '×' || operator === '÷') {
+        newSymbols = [
+          createOpSymbol('(', 'grouping'),
+          ...leftSide,
+          createOpSymbol(')', 'grouping'),
+          createOpSymbol(operator === '×' ? '*' : '÷', 'operator'),
+          createOpSymbol(number, 'number'),
+          createOpSymbol('=', 'operator'),
+          createOpSymbol('(', 'grouping'),
+          ...rightSide,
+          createOpSymbol(')', 'grouping'),
+          createOpSymbol(operator === '×' ? '*' : '÷', 'operator'),
+          createOpSymbol(number, 'number')
+        ];
+      }
+
+      // Position the new symbols
+      const spacing = 40;
+      newSymbols.forEach((sym, index) => {
+        sym.x = nearestContainer.x + 50 + (index * spacing);
+        sym.y = nearestContainer.y + nearestContainer.height / 2;
+      });
+
+      // Update placed symbols
+      setPlacedSymbols(prevSymbols => [
+        ...prevSymbols.filter(sym => sym.containerId !== nearestContainer.id),
+        ...newSymbols
+      ]);
+
+    } catch (error) {
+      setError('Error applying operation: ' + error.message);
+    }
   };
   
   // Remove a container
@@ -572,13 +690,53 @@ const MathSolver = () => {
         
         {/* Container label */}
         <Text
-          text={`Expression ${containers.findIndex(c => c.id === container.id) + 1}`}
+          text={container.type === 'eqop' ? 'EqOp' : `Expression ${containers.findIndex(c => c.id === container.id) + 1}`}
           fontSize={12}
           fontFamily="Arial"
           fill="#7f8c8d"
           x={5}
           y={5}
         />
+
+        {/* Apply button for EqOp containers */}
+        {container.type === 'eqop' && (
+          <Group x={container.width - 115} y={5}>
+            <Rect
+              width={40}
+              height={15}
+              fill="#4CAF50"
+              cornerRadius={2}
+              onClick={(e) => {
+                e.cancelBubble = true;
+                applyEqOp(container.id);
+              }}
+              onTouchStart={(e) => {
+                e.evt.preventDefault();
+                e.cancelBubble = true;
+                applyEqOp(container.id);
+              }}
+            />
+            <Text
+              text="Apply"
+              fontSize={10}
+              fontFamily="Arial"
+              fill="white"
+              width={40}
+              height={15}
+              align="center"
+              verticalAlign="middle"
+              onClick={(e) => {
+                e.cancelBubble = true;
+                applyEqOp(container.id);
+              }}
+              onTouchStart={(e) => {
+                e.evt.preventDefault();
+                e.cancelBubble = true;
+                applyEqOp(container.id);
+              }}
+            />
+          </Group>
+        )}
 
         {/* Clear button */}
         <Group x={container.width - 70} y={5}>
@@ -803,6 +961,14 @@ const MathSolver = () => {
         >
           Add Container
         </button>
+
+        <button 
+          className="px-4 py-2 text-lg text-gray-700 appearance-none font-bold bg-white border rounded hover:bg-blue-50"
+          onClick={createEqOpContainer}
+          style={{WebkitAppearance: 'none'}}
+        >
+          Add EqOp Container
+        </button>
       </div>
       
       {equation && (
@@ -837,12 +1003,21 @@ const MathSolver = () => {
           <li>The container with an equals sign (=) will be used as the main equation</li>
           <li>For unit conversions, add a number, then a unit, equals sign, and another unit</li>
           <li>Click "Solve Equation" to evaluate the expression or perform the conversion</li>
+          <li>Use EqOp containers to apply operations to both sides of an equation:</li>
+          <ul className="list-disc ml-8 mt-1">
+            <li>Click "Add EqOp Container" to create an operation container</li>
+            <li>Add an operator (+, -, ×, ÷) followed by a number</li>
+            <li>Click "Apply" to perform the operation on both sides of the nearest equation</li>
+          </ul>
         </ol>
         <p className="mt-2">
           <strong>Example unit conversion:</strong> Place "5", "km", "=", "mi" in order within a container.
         </p>
         <p>
           <strong>Example equation:</strong> Place "x", "+", "5", "=", "10" in order within a container.
+        </p>
+        <p>
+          <strong>Example EqOp:</strong> Place "+", "3" in an EqOp container and click Apply to add 3 to both sides of the nearest equation.
         </p>
       </div>
 
