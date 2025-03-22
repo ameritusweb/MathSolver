@@ -17,6 +17,29 @@ const detectPercentageExpression = (symbols) => {
          afterOf.type === 'number';
 };
 
+// Helper function to extract full number from consecutive number symbols
+const extractFullNumber = (symbols, startIndex) => {
+  let fullNumber = '';
+  let i = startIndex;
+  
+  // Go backwards to handle numbers before the current position
+  while (i >= 0 && symbols[i] && symbols[i].type === 'number') {
+    fullNumber = symbols[i].text + fullNumber;
+    i--;
+  }
+  
+  // Reset to the position after startIndex
+  i = startIndex + 1;
+  
+  // Go forwards to handle numbers after the current position
+  while (i < symbols.length && symbols[i] && symbols[i].type === 'number') {
+    fullNumber = fullNumber + symbols[i].text;
+    i++;
+  }
+  
+  return fullNumber;
+};
+
 // Helper function to handle percentage expressions and return a formatted equation
 const handlePercentageExpression = (symbols) => {
   try {
@@ -24,11 +47,19 @@ const handlePercentageExpression = (symbols) => {
     const percentIndex = symbols.findIndex(sym => sym.text === '%');
     
     if (percentIndex > 0 && percentIndex < symbols.length - 2) {
-      const percentValue = symbols[percentIndex - 1].text;
+      // Get the full percentage number (handle multi-digit numbers)
+      const percentValue = extractFullNumber(symbols, percentIndex - 1);
+      
       const ofIndex = symbols.findIndex(sym => sym.text === 'of');
       
       if (ofIndex > percentIndex && ofIndex < symbols.length - 1) {
-        const value = symbols[ofIndex + 1].text;
+        // Get the full value number (handle multi-digit numbers)
+        const value = extractFullNumber(symbols, ofIndex + 1);
+        
+        if (!percentValue || !value) {
+          console.error('Invalid percentage expression: missing numbers');
+          return '';
+        }
         
         // Create a percentage calculation equation
         const calculation = `(${percentValue} / 100) * ${value}`;
