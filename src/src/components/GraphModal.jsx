@@ -1,6 +1,7 @@
 import React from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import * as math from 'mathjs';
+import { X } from 'lucide-react';
 
 const GraphModal = ({ expression, onClose }) => {
   // Generate points for the graph
@@ -47,38 +48,52 @@ const GraphModal = ({ expression, onClose }) => {
   const points = generatePoints();
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-[600px] max-w-[90vw]">
+    <div className="fixed inset-0 bg-black/50 bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-xl shadow-xl p-6 w-[700px] max-w-[90vw]">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-xl font-bold">Graph of: {expression}</h3>
+          <h3 className="text-xl font-bold text-gray-900">Graph of Function</h3>
           <button
             onClick={onClose}
-            className="text-gray-500 hover:text-gray-700"
+            className="text-gray-500 hover:text-gray-700 p-1 hover:bg-gray-100 rounded-full transition-colors"
           >
-            ×
+            <X className="w-5 h-5" />
           </button>
         </div>
         
-        <div className="h-[400px] w-full">
+        <div className="bg-gray-50 rounded-lg p-4 mb-4">
+          <p className="font-medium text-gray-700">{expression}</p>
+        </div>
+        
+        <div className="h-[400px] w-full bg-white rounded-lg overflow-hidden border">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={points}>
-              <CartesianGrid strokeDasharray="3 3" />
+            <LineChart data={points} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
               <XAxis 
                 dataKey="x"
                 type="number"
                 domain={[-10, 10]}
                 tickCount={11}
+                stroke="#6B7280"
               />
               <YAxis 
                 type="number"
                 domain={[-10, 10]}
                 tickCount={11}
+                stroke="#6B7280"
               />
-              <Tooltip />
+              <Tooltip 
+                contentStyle={{ 
+                  backgroundColor: 'white',
+                  border: '1px solid #E5E7EB',
+                  borderRadius: '0.5rem',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                }}
+              />
               <Line 
                 type="monotone" 
                 dataKey="y" 
-                stroke="#8884d8" 
+                stroke="#3B82F6"
+                strokeWidth={2}
                 dot={false}
                 isAnimationActive={false}
               />
