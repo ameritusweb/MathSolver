@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Stage, Layer, Text, Group, Rect, Line } from 'react-konva';
 import inferEquation from '../math/inferEquation';
+import GraphModal from './GraphModal';
 
 const MathSolver = () => {
   // Available mathematical symbols
@@ -109,6 +110,36 @@ const MathSolver = () => {
   // State for active symbol category
   const [activeCategory, setActiveCategory] = useState('math'); // 'math', 'length', 'mass', 'volume', 'temperature', 'time'
   
+  const [graphContainer, setGraphContainer] = useState(null);
+
+  const getContainerExpression = (containerId) => {
+    const symbolsByContainer = {};
+      
+      // Initialize with all containers
+      containers.forEach(cont => {
+        symbolsByContainer[cont.id] = [];
+      });
+      
+      // Add symbols to their containers
+      placedSymbols.forEach(sym => {
+        if (sym.containerId) {
+          symbolsByContainer[sym.containerId].push(sym);
+        }
+      });
+      
+      // Sort symbols within each container from left to right
+      Object.keys(symbolsByContainer).forEach(containerId => {
+        symbolsByContainer[containerId].sort((a, b) => a.x - b.x);
+      });
+      
+    const symbols = symbolsByContainer[containerId] || [];
+    return symbols
+      .sort((a, b) => a.x - b.x)
+      .map(sym => sym.text)
+      .join(' ')
+      .trim();
+  };
+
   const stageRef = useRef(null);
   const layerRef = useRef(null);
   
@@ -344,7 +375,7 @@ const MathSolver = () => {
         />
         
         {/* Remove button */}
-        <Group x={container.width - 20} y={5}>
+        <Group x={container.width - 45} y={5}>
           <Rect
             width={15}
             height={15}
@@ -367,6 +398,34 @@ const MathSolver = () => {
             onClick={(e) => {
               e.cancelBubble = true;
               removeContainer(container.id);
+            }}
+          />
+        </Group>
+
+        {/* Graph button */}
+        <Group x={container.width - 20} y={5}>
+          <Rect
+            width={15}
+            height={15}
+            fill="#4CAF50"
+            cornerRadius={2}
+            onClick={(e) => {
+              e.cancelBubble = true;
+              setGraphContainer(container.id);
+            }}
+          />
+          <Text
+            text="📈"
+            fontSize={10}
+            fontFamily="Arial"
+            fill="white"
+            width={15}
+            height={15}
+            align="center"
+            verticalAlign="middle"
+            onClick={(e) => {
+              e.cancelBubble = true;
+              setGraphContainer(container.id);
             }}
           />
         </Group>
@@ -510,6 +569,13 @@ const MathSolver = () => {
           <strong>Example equation:</strong> Place "x", "+", "5", "=", "10" in order within a container.
         </p>
       </div>
+
+      {graphContainer && (
+        <GraphModal
+          expression={getContainerExpression(graphContainer)}
+          onClose={() => setGraphContainer(null)}
+        />
+      )}
     </div>
   );
 };
