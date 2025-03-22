@@ -50,7 +50,7 @@ const handlePercentageExpression = (symbols) => {
   }
 };
 
-const inferEquation = (containers, placedSymbols, setEquation, setResult, setError) => {
+const inferEquation = (containers, placedSymbols, unitSymbols, setEquation, setResult, setError) => {
     try {
       // Group symbols by container
       const symbolsByContainer = {};
@@ -148,7 +148,7 @@ const inferEquation = (containers, placedSymbols, setEquation, setResult, setErr
           }
         });
       }
-      
+
         expression = expression.trim();
         containerExpressions[containerId] = expression;
         containerUnits[containerId] = units;
@@ -257,6 +257,10 @@ if (equations.length > 1 && variables.size > 0) {
       // Replace function followed by parentheses
       let processedEquation = mainEquation.replace(/(\w+)\s+\(/g, '$1(');
       
+      processedEquation = processedEquation.replace(/(\d)\s+(\d)/g, '$1$2');
+
+      processedEquation = processedEquation.replace(/(\d)\s+\.\s+(\d)/g, '$1.$2');
+
       // Check for unit conversion
       const unitsInEquation = containerUnits[mainContainerId];
       
@@ -288,6 +292,46 @@ if (equations.length > 1 && variables.size > 0) {
             const leftPart = extractNumberAndUnit(leftSide);
             const rightPart = extractNumberAndUnit(rightSide);
             
+        // When only a unit symbol is on the right side (like "5 yd = ft")
+        if (leftPart && rightSide.match(/^[a-zA-Z°]+$/)) {
+          const rightUnit = rightSide.trim();
+          
+          // Find unit information from unitSymbols array
+          const leftUnitInfo = unitSymbols.find(u => u.text === leftPart.unit);
+          const rightUnitInfo = unitSymbols.find(u => u.text === rightUnit);
+          
+          if (leftUnitInfo && rightUnitInfo && leftUnitInfo.category === rightUnitInfo.category) {
+            let result;
+            
+            // Handle temperature specially due to offsets
+            if (leftUnitInfo.category === 'temperature') {
+              // Convert left to base (Celsius), then to target
+              const leftInCelsius = (leftPart.number + leftUnitInfo.offset) * leftUnitInfo.conversionBase;
+              const rightValue = (leftInCelsius / rightUnitInfo.conversionBase) - rightUnitInfo.offset;
+              result = rightValue.toFixed(4);
+            } else {
+              // For all other unit types, convert via base unit
+              const valueInBaseUnit = leftPart.number * leftUnitInfo.conversionBase;
+              const convertedValue = valueInBaseUnit / rightUnitInfo.conversionBase;
+              result = convertedValue.toFixed(4);
+            }
+            
+            // Format result with appropriate decimal places
+            const formattedResult = parseFloat(result) % 1 === 0 
+              ? parseInt(result).toString() 
+              : parseFloat(result).toFixed(2);
+            
+            setEquation(processedEquation);
+            setResult(`${leftPart.number} ${leftPart.unit} = ${formattedResult} ${rightUnit}`);
+            setError('');
+            return;
+          } else {
+            setError(`Cannot convert between ${leftPart.unit} and ${rightUnit} - different unit types`);
+            setResult(null);
+            return;
+          }
+        }
+
             if (leftPart && rightPart) {
               // Find the units from our unit symbols
               const leftUnitInfo = unitSymbols.find(u => u.text === leftPart.unit);
