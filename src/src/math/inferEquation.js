@@ -1,6 +1,5 @@
 import * as math from 'mathjs';
- 
- // Build the equation from the placed symbols and their containers
+
 const inferEquation = (containers, placedSymbols, setEquation, setResult, setError) => {
     try {
       // Group symbols by container
@@ -26,6 +25,8 @@ const inferEquation = (containers, placedSymbols, setEquation, setResult, setErr
       // Build expressions for each container
       const containerExpressions = {};
       const containerUnits = {};
+      const equations = [];
+      const variables = new Set();
       
       Object.keys(symbolsByContainer).forEach(containerId => {
         const symbols = symbolsByContainer[containerId];
@@ -40,6 +41,11 @@ const inferEquation = (containers, placedSymbols, setEquation, setResult, setErr
         let currentNumber = '';
         
         symbols.forEach((sym, index) => {
+          // Track variables
+          if (sym.type === 'variable') {
+            variables.add(sym.text);
+          }
+
           // Handle units specially
           if (sym.type === 'unit') {
             units.push({
@@ -63,7 +69,6 @@ const inferEquation = (containers, placedSymbols, setEquation, setResult, setErr
             currentNumber = '';
           } else if (sym.type === 'function') {
             if (sym.text === '√') {
-              // Special case for square root
               expression += 'sqrt';
             } else {
               expression += sym.text;
@@ -79,34 +84,114 @@ const inferEquation = (containers, placedSymbols, setEquation, setResult, setErr
             currentNumber = '';
           }
           
-          // Add spacing for readability
           if (index < symbols.length - 1) {
             expression += ' ';
           }
         });
         
-        containerExpressions[containerId] = expression.trim();
+        expression = expression.trim();
+        containerExpressions[containerId] = expression;
         containerUnits[containerId] = units;
+        
+        if (expression.includes('=')) {
+          equations.push(expression);
+        }
       });
       
-      // Find container with equals sign to be the main equation
-      let mainEquation = '';
-      let mainContainerId = '';
-      for (const containerId in containerExpressions) {
-        const expr = containerExpressions[containerId];
-        if (expr.includes('=')) {
-          mainEquation = expr;
-          mainContainerId = containerId;
-          break;
-        }
-      }
-      
-      if (!mainEquation) {
+      // If no equations found, show error
+      if (equations.length === 0) {
         setError('No equation found. Add an equals sign (=) to a container.');
         setEquation('');
         setResult(null);
         return;
       }
+
+      // First check if we have a system of equations
+      // Inside your inferEquation function, replace the system solving section with this:
+
+if (equations.length > 1 && variables.size > 0) {
+  setEquation(equations.join(' and '));
+  
+  try {
+    // Create a scope object to store variable values
+    const scope = {};
+    
+    // First pass: find direct assignments (e.g., x = 2)
+    equations.forEach(eq => {
+      const [left, right] = eq.split('=').map(side => side.trim());
+      // Check if right side is a number
+      if (/^\d+$/.test(right)) {
+        scope[left.trim()] = parseFloat(right);
+      }
+      // Check if left side is a number
+      if (/^\d+$/.test(left)) {
+        scope[right.trim()] = parseFloat(left);
+      }
+    });
+    
+    // Second pass: handle variable assignments (e.g., y = x)
+    let changed = true;
+    while (changed) {
+      changed = false;
+      equations.forEach(eq => {
+        const [left, right] = eq.split('=').map(side => side.trim());
+        
+        // If right side is a known variable, assign its value to left side
+        if (scope[right] !== undefined && scope[left] === undefined) {
+          scope[left] = scope[right];
+          changed = true;
+        }
+        // If left side is a known variable, assign its value to right side
+        if (scope[left] !== undefined && scope[right] === undefined) {
+          scope[right] = scope[left];
+          changed = true;
+        }
+        
+        // Try to evaluate more complex expressions
+        try {
+          if (scope[left] === undefined) {
+            const rightValue = math.evaluate(right, scope);
+            if (typeof rightValue === 'number') {
+              scope[left] = rightValue;
+              changed = true;
+            }
+          }
+          if (scope[right] === undefined) {
+            const leftValue = math.evaluate(left, scope);
+            if (typeof leftValue === 'number') {
+              scope[right] = leftValue;
+              changed = true;
+            }
+          }
+        } catch (e) {
+          // Skip if we can't evaluate yet
+        }
+      });
+    }
+    
+    // Format results
+    const results = Array.from(variables).sort().map(variable => {
+      if (scope[variable] !== undefined) {
+        return `${variable} = ${scope[variable]}`;
+      }
+      return `${variable} = unknown`;
+    });
+    
+    if (results.length > 0) {
+      setResult(results.join(', '));
+      setError('');
+      return;
+    }
+  } catch (sysErr) {
+    console.error('System solving error:', sysErr);
+  }
+}
+
+      // If not a system or system solving failed, proceed with original logic
+      let mainEquation = equations[0];
+      let mainContainerId = Object.keys(containerExpressions).find(id => 
+        containerExpressions[id] === mainEquation
+      );
       
       // Process the equation to make it solvable
       // Replace function followed by parentheses
@@ -178,12 +263,9 @@ const inferEquation = (containers, placedSymbols, setEquation, setResult, setErr
           }
         }
       }
-      
-      // Try to solve it as a regular equation
+
       try {
         setEquation(processedEquation);
-        
-        // Split on equals sign
         const sides = processedEquation.split('=').map(side => side.trim());
         
         // Handle case where right side is empty (e.g. "7 + 9 =")
@@ -265,6 +347,7 @@ const inferEquation = (containers, placedSymbols, setEquation, setResult, setErr
         }
         
         setError('');
+        
       } catch (evalErr) {
         console.error('Evaluation error:', evalErr);
         setError(`Error evaluating equation: ${evalErr.message}`);
@@ -276,7 +359,6 @@ const inferEquation = (containers, placedSymbols, setEquation, setResult, setErr
       setEquation('');
       setResult(null);
     }
-  };
+};
 
-
-  export default inferEquation;
+export default inferEquation;
