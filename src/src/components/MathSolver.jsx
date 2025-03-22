@@ -473,49 +473,49 @@ const MathSolver = () => {
       <div className="mb-4">
         <div className="flex mb-2 space-x-2">
           <button
-            className={`px-3 py-1 ${activeCategory === 'math' ? 'bg-blue-500 text-white' : 'bg-gray-600'} rounded`}
+            className={`px-3 py-1 ${activeCategory === 'math' ? 'text-gray-800' : 'text-gray-400'} text-lg appearance-none font-bold bg-white border rounded hover:bg-blue-50`}
             onClick={() => setActiveCategory('math')}
           >
             Math
           </button>
           <button
-            className={`px-3 py-1 ${activeCategory === 'length' ? 'bg-blue-500 text-white' : 'bg-gray-600'} rounded`}
+            className={`px-3 py-1 ${activeCategory === 'length' ? 'text-gray-800' : 'text-gray-400'} text-lg appearance-none font-bold bg-white border rounded hover:bg-blue-50`}
             onClick={() => setActiveCategory('length')}
           >
             Length
           </button>
           <button
-            className={`px-3 py-1 ${activeCategory === 'mass' ? 'bg-blue-500 text-white' : 'bg-gray-600'} rounded`}
+            className={`px-3 py-1 ${activeCategory === 'mass' ? 'text-gray-800' : 'text-gray-400'} text-lg appearance-none font-bold bg-white border rounded hover:bg-blue-50`}
             onClick={() => setActiveCategory('mass')}
           >
             Weight
           </button>
           <button
-            className={`px-3 py-1 ${activeCategory === 'volume' ? 'bg-blue-500 text-white' : 'bg-gray-600'} rounded`}
+            className={`px-3 py-1 ${activeCategory === 'volume' ? 'text-gray-800' : 'text-gray-400'} text-lg appearance-none font-bold bg-white border rounded hover:bg-blue-50`}
             onClick={() => setActiveCategory('volume')}
           >
             Volume
           </button>
           <button
-            className={`px-3 py-1 ${activeCategory === 'temperature' ? 'bg-blue-500 text-white' : 'bg-gray-600'} rounded`}
+            className={`px-3 py-1 ${activeCategory === 'temperature' ? 'text-gray-800' : 'text-gray-400'} text-lg appearance-none font-bold bg-white border rounded hover:bg-blue-50`}
             onClick={() => setActiveCategory('temperature')}
           >
             Temp
           </button>
           <button
-            className={`px-3 py-1 ${activeCategory === 'time' ? 'bg-blue-500 text-white' : 'bg-gray-600'} rounded`}
+            className={`px-3 py-1 ${activeCategory === 'time' ? 'text-gray-800' : 'text-gray-400'} text-lg appearance-none font-bold bg-white border rounded hover:bg-blue-50`}
             onClick={() => setActiveCategory('time')}
           >
             Time
           </button>
           <button
-            className={`px-3 py-1 ${activeCategory === 'conversions' ? 'bg-blue-500 text-white' : 'bg-gray-600'} rounded`}
+            className={`px-3 py-1 ${activeCategory === 'conversions' ? 'text-gray-800' : 'text-gray-400'} text-lg appearance-none font-bold bg-white border rounded hover:bg-blue-50`}
             onClick={() => setActiveCategory('conversions')}
           >
             Conversions
           </button>
           <button
-            className={`px-3 py-1 ${activeCategory === 'equations' ? 'bg-blue-500 text-white' : 'bg-gray-600'} rounded`}
+            className={`px-3 py-1 ${activeCategory === 'equations' ? 'text-gray-800' : 'text-gray-400'} text-lg appearance-none font-bold bg-white border rounded hover:bg-blue-50`}
             onClick={() => setActiveCategory('equations')}
           >
             Equations
@@ -787,7 +787,7 @@ const MathSolver = () => {
       
       <div className="mb-4 flex space-x-4">
       <button 
-          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 border border-blue-600 appearance-none"
+          className="px-4 py-2 text-lg text-gray-700 appearance-none font-bold bg-white border rounded hover:bg-blue-50"
           onClick={inferEquation.bind(this, containers, placedSymbols, unitSymbols, setEquation, setResult, setError)}
           style={{WebkitAppearance: 'none'}}
         >
@@ -795,7 +795,7 @@ const MathSolver = () => {
         </button>
         
         <button 
-          className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 border border-green-600 appearance-none"
+          className="px-4 py-2 text-lg text-gray-700 appearance-none font-bold bg-white border rounded hover:bg-blue-50"
           onClick={createContainer}
           style={{WebkitAppearance: 'none'}}
         >
