@@ -596,12 +596,69 @@ const MathSolver = () => {
         .sort((a, b) => a.x - b.x);
   
       // Find the first pair of symbols we can simplify
-      for (let i = 0; i < symbols.length - 1; i++) {
+      for (let i = 0; i < symbols.length - 3; i++) {
         const current = symbols[i];
         const next = symbols[i + 1];
         const afterNext = symbols[i + 2];
+        const afterAfterNext = symbols[i + 3];
   
-        // Case 1: "+0" or "0+" pattern
+        // First check if we're in the middle of a variable expression
+        if (i > 0 && symbols[i-1].type === 'variable') {
+          // Skip this position as it's part of a variable expression
+          continue;
+        }
+  
+        // Case 1: Cancelling multiply/divide operations (×2 ÷2 or ÷2 ×2)
+        if ((next?.type === 'number' && afterNext?.type === 'operator' && afterAfterNext?.type === 'number') &&
+            ((current.text === '×' && afterNext.text === '÷') || (current.text === '÷' && afterNext.text === '×')) &&
+            (next.text === afterAfterNext.text)) {
+          // Remove all four tokens
+          setPlacedSymbols(prev => prev.filter(s => 
+            s.instanceId !== current.instanceId && 
+            s.instanceId !== next.instanceId &&
+            s.instanceId !== afterNext.instanceId &&
+            s.instanceId !== afterAfterNext.instanceId
+          ));
+          setSimplifyMessage(`Cancelled ${current.text}${next.text} ${afterNext.text}${afterAfterNext.text}`);
+          return;
+        }
+  
+        // Case 2: Number +/- Number with no variable before it
+        if (current.type === 'number' && afterNext?.type === 'number' && 
+            (next.text === '+' || next.text === '-')) {
+          // Check we're not part of a variable expression
+          if (i === 0 || (i > 0 && symbols[i-1].type !== 'variable' && symbols[i-1].text !== '-')) {
+            const num1 = parseInt(current.text);
+            const num2 = parseInt(afterNext.text);
+            const result = next.text === '+' ? num1 + num2 : num1 - num2;
+            
+            // Create new combined symbol
+            const newSymbol = {
+              id: `number_${Date.now()}`,
+              instanceId: `number_${Date.now()}_${Math.random()}`,
+              type: 'number',
+              text: result.toString(),
+              x: current.x,
+              y: current.y,
+              containerId
+            };
+  
+            // Update placed symbols
+            setPlacedSymbols(prev => [
+              ...prev.filter(s => 
+                s.instanceId !== current.instanceId && 
+                s.instanceId !== next.instanceId && 
+                s.instanceId !== afterNext.instanceId
+              ),
+              newSymbol
+            ]);
+  
+            setSimplifyMessage(`Combined ${num1} ${next.text} ${num2} = ${result}`);
+            return;
+          }
+        }
+  
+        // Case 3: "+0" or "0+" pattern
         if ((current.text === '+' && next?.text === '0') || 
             (current.text === '0' && next?.text === '+')) {
           // Remove both tokens
@@ -613,39 +670,7 @@ const MathSolver = () => {
           return;
         }
   
-        // Case 2: Number +/- Number
-        if (current.type === 'number' && afterNext?.type === 'number' && 
-            (next.text === '+' || next.text === '-')) {
-          const num1 = parseInt(current.text);
-          const num2 = parseInt(afterNext.text);
-          const result = next.text === '+' ? num1 + num2 : num1 - num2;
-          
-          // Create new combined symbol
-          const newSymbol = {
-            id: `number_${Date.now()}`,
-            instanceId: `number_${Date.now()}_${Math.random()}`,
-            type: 'number',
-            text: result.toString(),
-            x: current.x,
-            y: current.y,
-            containerId
-          };
-  
-          // Update placed symbols
-          setPlacedSymbols(prev => [
-            ...prev.filter(s => 
-              s.instanceId !== current.instanceId && 
-              s.instanceId !== next.instanceId && 
-              s.instanceId !== afterNext.instanceId
-            ),
-            newSymbol
-          ]);
-  
-          setSimplifyMessage(`Combined ${num1} ${next.text} ${num2} = ${result}`);
-          return;
-        }
-  
-        // Case 3: Same variable being added/subtracted (x - x or x + -x)
+        // Case 4: Same variable being added/subtracted (x - x or x + -x)
         if (current.type === 'variable' && afterNext?.type === 'variable' &&
             current.text === afterNext.text && 
             (next.text === '+' || next.text === '-')) {
@@ -673,6 +698,25 @@ const MathSolver = () => {
             setSimplifyMessage(`Cancelled ${current.text} - ${current.text} = 0`);
             return;
           }
+        }
+  
+        // Case 5: Cancelling terms after a variable (y -2 +2 → y)
+        if (current.type === 'variable' && 
+            next?.text === '-' && 
+            afterNext?.type === 'number' &&
+            afterAfterNext?.text === '+' &&
+            symbols[i + 4]?.type === 'number' &&
+            afterNext.text === symbols[i + 4].text) {
+          
+          // Remove everything except the variable
+          setPlacedSymbols(prev => prev.filter(s => 
+            s.instanceId === current.instanceId ||
+            (s.containerId === containerId && 
+             s.x < current.x || s.x > symbols[i + 4].x)
+          ));
+          
+          setSimplifyMessage(`Cancelled -${afterNext.text} +${symbols[i + 4].text} after ${current.text}`);
+          return;
         }
       }
   
