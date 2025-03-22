@@ -75,7 +75,7 @@ const inferEquation = (containers, placedSymbols, unitSymbols, setEquation, setR
       // Build expressions for each container
       const containerExpressions = {};
       const containerUnits = {};
-      const equations = [];
+      let equations = [];
       const variables = new Set();
       
       Object.keys(symbolsByContainer).forEach(containerId => {
@@ -183,6 +183,14 @@ const inferEquation = (containers, placedSymbols, unitSymbols, setEquation, setR
         return;
       }
 
+      equations = equations.map(eq => {
+
+        let processedEquation = eq.replace(/(\w+)\s+\(/g, '$1(');
+        processedEquation = processedEquation.replace(/(\d)\s+(\d)/g, '$1$2');
+        processedEquation = processedEquation.replace(/(\d)\s+\.\s+(\d)/g, '$1.$2');
+        return processedEquation.trim();
+      });
+
       console.log('Found equations:', equations);
       console.log('Found variables:', Array.from(variables));
 
@@ -273,6 +281,28 @@ const inferEquation = (containers, placedSymbols, unitSymbols, setEquation, setR
                 const isNegative = i > 0 && rightParts[i-1] === '-';
                 constantTerms -= isNegative ? -value : value;
                 console.log('Subtracted constant from right:', isNegative ? -value : value);
+              } else {
+                try {
+                  // Handle complex expressions using math.js
+                  const expression = part.replace(/×/g, '*').replace(/÷/g, '/');
+                  const value = math.evaluate(expression);
+                  
+                  // Check if the result is a number
+                  if (typeof value === 'number' && !isNaN(value)) {
+                    const isNegative = i > 0 && rightParts[i-1] === '-';
+                    constantTerms -= isNegative ? -value : value;
+                    console.log('Evaluated and subtracted expression:', part, '=', value);
+                  } else if (typeof value === 'object' && value.toString().match(/[a-zA-Z]/)) {
+                    // If the result contains variables, treat it as a variable term
+                    variableTerm = { side: 'right', term: value.toString() };
+                    console.log('Found variable expression on right:', value.toString());
+                  } else {
+                    throw new Error(`Unable to process expression: ${part}`);
+                  }
+                } catch (err) {
+                  console.error('Error evaluating expression:', err);
+                  throw new Error(`Invalid expression on right side: ${part}`);
+                }
               }
             }
 
@@ -312,11 +342,8 @@ const inferEquation = (containers, placedSymbols, unitSymbols, setEquation, setR
       let mainContainerId = Object.keys(containerExpressions).find(id => 
         containerExpressions[id] === mainEquation
       );
-      
-      // Process the equation to make it solvable
-      let processedEquation = mainEquation.replace(/(\w+)\s+\(/g, '$1(');
-      processedEquation = processedEquation.replace(/(\d)\s+(\d)/g, '$1$2');
-      processedEquation = processedEquation.replace(/(\d)\s+\.\s+(\d)/g, '$1.$2');
+
+      let processedEquation = mainEquation;
 
       // Check for unit conversion
       const unitsInEquation = containerUnits[mainContainerId];

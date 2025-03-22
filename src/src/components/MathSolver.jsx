@@ -161,6 +161,16 @@ const MathSolver = () => {
 
   // Available mathematical symbols
   const mathSymbols = [
+    { id: '1', type: 'number', text: '1' },
+    { id: '2', type: 'number', text: '2' },
+    { id: '3', type: 'number', text: '3' },
+    { id: '4', type: 'number', text: '4' },
+    { id: '5', type: 'number', text: '5' },
+    { id: '6', type: 'number', text: '6' },
+    { id: '7', type: 'number', text: '7' },
+    { id: '8', type: 'number', text: '8' },
+    { id: '9', type: 'number', text: '9' },
+    { id: '0', type: 'number', text: '0' },
     { id: 'x', type: 'variable', text: 'x' },
     { id: 'y', type: 'variable', text: 'y' },
     { id: 'plus', type: 'operator', text: '+' },
@@ -173,16 +183,6 @@ const MathSolver = () => {
     { id: 'percent', type: 'operator', text: '%' }, // Added the "%" operator
     { id: 'pi', type: 'constant', text: 'π' },  // Added pi constant
     { id: 'e', type: 'constant', text: 'e' },   // Added e constant
-    { id: '1', type: 'number', text: '1' },
-    { id: '2', type: 'number', text: '2' },
-    { id: '3', type: 'number', text: '3' },
-    { id: '4', type: 'number', text: '4' },
-    { id: '5', type: 'number', text: '5' },
-    { id: '6', type: 'number', text: '6' },
-    { id: '7', type: 'number', text: '7' },
-    { id: '8', type: 'number', text: '8' },
-    { id: '9', type: 'number', text: '9' },
-    { id: '0', type: 'number', text: '0' },
     { id: 'sqrt', type: 'function', text: '√' },
     { id: 'sin', type: 'function', text: 'sin' },
     { id: 'cos', type: 'function', text: 'cos' },
