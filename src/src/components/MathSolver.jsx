@@ -3,6 +3,9 @@ import { Stage, Layer, Text, Group, Rect, Line } from 'react-konva';
 import inferEquation from '../math/inferEquation';
 import GraphModal from './GraphModal';
 import { MinusCircle } from 'lucide-react';
+import { ShapeSelectorModal } from './ShapeSelectorModal';
+import NumberShapes from './NumberShapes';
+import VisualModal from './VisualModal';
 
 const MathSolver = () => {
 
@@ -249,6 +252,14 @@ const MathSolver = () => {
     { id: 'min-s', type: 'conversion', text: '60 s / 1 min', fromUnit: 'min', toUnit: 's', factor: 60 },
   ];
   
+  const [activeVisual, setActiveVisual] = useState(null);
+
+// Add this to the list of categories in renderSymbolsToolbar
+const visualTools = [
+  { id: 'clock', name: 'Trigonometry Clock', icon: '🕒', description: 'Interactive visualization of sine, cosine, and tangent on a clock face' },
+  // Add more visual tools here
+];
+
   // Combined symbols for toolbar
   const allSymbols = [...mathSymbols, ...unitSymbols];
   
@@ -270,6 +281,8 @@ const MathSolver = () => {
   const [selectedContainer, setSelectedContainer] = useState(null);
 
   const [highlightedContainer, setHighlightedContainer] = useState(null);
+
+  const [shapeSelector, setShapeSelector] = useState(null);
 
   const toggleHighlightedContainer = (containerId) => {
     if (highlightedContainer === containerId) { 
@@ -346,9 +359,33 @@ const MathSolver = () => {
 
   const stageRef = useRef(null);
   const layerRef = useRef(null);
+
+  const handleShapeSelect = ({ shape, color, value }) => {
+    const newSymbol = {
+      id: `number_${Date.now()}`,
+      instanceId: `number_${Date.now()}_${Math.random()}`,
+      type: 'number',
+      text: value.toString(),
+      shape,
+      color,
+      x: stageRef.current.width() / 2,
+      y: stageRef.current.height() / 2,
+      containerId: null,
+    };
+    
+    setPlacedSymbols([...placedSymbols, newSymbol]);
+    setShapeSelector(null);
+  };
   
   // Handle dropping a symbol onto the canvas
   const handleSymbolDrop = (symbol) => {
+    if (symbol.type === 'number') {
+      setShapeSelector({
+        value: isSignFlipped ? -parseFloat(symbol.text) : parseFloat(symbol.text)
+      });
+      return;
+    }
+
     let modifiedSymbol = { ...symbol };
     if (isSignFlipped && symbol.type === 'number' && !isNaN(parseFloat(symbol.text))) {
       modifiedSymbol.text = (-parseFloat(symbol.text)).toString();
@@ -840,6 +877,12 @@ const MathSolver = () => {
           >
             Equations
           </button>
+          <button
+            className={`px-3 py-1 ${activeCategory === 'visuals' ? 'text-gray-800' : 'text-gray-400'} text-lg appearance-none font-bold bg-white border rounded hover:bg-blue-50`}
+            onClick={() => setActiveCategory('visuals')}
+          >
+            Visuals
+          </button>
         </div>
         <div className="flex flex-wrap gap-2 p-4 border rounded bg-gray-50">
           {activeCategory === 'equations' ? (
@@ -853,6 +896,25 @@ const MathSolver = () => {
               </button>
             ))
           ) : (
+            activeCategory === 'visuals' ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border rounded bg-gray-50">
+                {visualTools.map((tool) => (
+                  <button
+                    key={tool.id}
+                    className="p-4 bg-white rounded-lg border hover:border-blue-300 hover:shadow-md transition-all text-left"
+                    onClick={() => setActiveVisual(tool.id)}
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl">{tool.icon}</span>
+                      <div>
+                        <h3 className="font-medium text-gray-900">{tool.name}</h3>
+                        <p className="text-sm text-gray-500">{tool.description}</p>
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            ) : (
             getFilteredSymbols().map((symbol) => (
               <button
                 key={symbol.id}
@@ -864,6 +926,7 @@ const MathSolver = () => {
                   : symbol.text}
               </button>
             ))
+            )
           )}
         </div>
       </div>
@@ -1117,31 +1180,39 @@ const MathSolver = () => {
         onDragMove={(e) => handleSymbolDragMove(e, symbol.instanceId)}
         onDragEnd={(e) => handleSymbolDragEnd(e, symbol.instanceId)}
       >
-        {/* Background rect */}
-        <Rect
-          width={symbol.text.length > 2 ? 50 : 40}
-          height={40}
-          offsetX={symbol.text.length > 2 ? 25 : 20}
-          offsetY={20}
-          fill="white"
-          stroke={symbol.type === 'unit' ? "#e67e22" : "#3498db"}
-          strokeWidth={1}
-          cornerRadius={5}
+        {symbol.type === 'number' && symbol.shape ? (
+        <NumberShapes
+          value={symbol.text}
+          shapeType={symbol.shape}
+          color={symbol.color}
+          size={20}
         />
-        
-        {/* Symbol text */}
-        <Text
-          text={symbol.text}
-          fontSize={symbol.text.length > 2 ? 14 : (symbol.text.length > 1 ? 16 : 24)}
-          fontFamily="Arial"
-          fill="black"
-          width={symbol.text.length > 2 ? 50 : 40}
-          height={40}
-          align="center"
-          verticalAlign="middle"
-          offsetX={symbol.text.length > 2 ? 25 : 20}
-          offsetY={20}
-        />
+      ) : (
+        <>
+          <Rect
+            width={symbol.text.length > 2 ? 50 : 40}
+            height={40}
+            offsetX={symbol.text.length > 2 ? 25 : 20}
+            offsetY={20}
+            fill="white"
+            stroke={symbol.type === 'unit' ? "#e67e22" : "#3498db"}
+            strokeWidth={1}
+            cornerRadius={5}
+          />
+          <Text
+            text={symbol.text}
+            fontSize={symbol.text.length > 2 ? 14 : (symbol.text.length > 1 ? 16 : 24)}
+            fontFamily="Arial"
+            fill="black"
+            width={symbol.text.length > 2 ? 50 : 40}
+            height={40}
+            align="center"
+            verticalAlign="middle"
+            offsetX={symbol.text.length > 2 ? 25 : 20}
+            offsetY={20}
+          />
+        </>
+      )}
         
         {/* Remove button */}
         <Group x={15} y={-25}>
@@ -1282,6 +1353,21 @@ const MathSolver = () => {
         <GraphModal
           expression={getContainerExpression(graphContainer)}
           onClose={() => setGraphContainer(null)}
+        />
+      )}
+
+      {shapeSelector && (
+        <ShapeSelectorModal
+          value={shapeSelector.value}
+          onSelect={handleShapeSelect}
+          onClose={() => setShapeSelector(null)}
+        />
+      )}
+
+      {activeVisual && (
+        <VisualModal
+          visual={activeVisual}
+          onClose={() => setActiveVisual(null)}
         />
       )}
     </div>
