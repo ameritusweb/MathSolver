@@ -44,6 +44,7 @@ const InteractiveFraction = ({
       x={x}
       y={y}
       onClick={onClick}
+      draggable
     >
       {/* Background */}
       <Rect
