@@ -18,7 +18,7 @@ const TrigClock = () => {
     if (playing) {
       animation = setInterval(() => {
         setAngle(prev => (prev + 0.02) % (2 * Math.PI));
-      }, 16); // ~60fps
+      }, 32); // ~30fps
     }
     return () => clearInterval(animation);
   }, [playing]);
@@ -26,12 +26,12 @@ const TrigClock = () => {
   // Clock dimensions
   const radius = 100;
   const centerX = 150;
-  const centerY = 150;
+  const centerY = 175;
   
   // Wave dimensions
   const waveWidth = 200;
   const waveHeight = radius;
-  const waveX = centerX + radius + 50;
+  const waveX = centerX + radius + 100;
   const waveY = centerY;
 
   // Calculate point position
@@ -67,9 +67,9 @@ const TrigClock = () => {
       const newSine = [...prev.sine, { x: angle * 30, y: -sine * radius }];  // Negative for canvas coordinates
       const newCosine = [...prev.cosine, { x: angle * 30, y: -cosine * radius }];  // Negative for canvas coordinates
       
-      // Keep only last 50 points
-      if (newSine.length > 50) newSine.shift();
-      if (newCosine.length > 50) newCosine.shift();
+      // Keep only last 75 points
+      if (newSine.length > 75) newSine.shift();
+      if (newCosine.length > 75) newCosine.shift();
       
       return {
         sine: newSine,
@@ -132,14 +132,6 @@ const TrigClock = () => {
         <label className="flex items-center gap-2 text-gray-700">
           <input
             type="checkbox"
-            checked={showTangent}
-            onChange={(e) => setShowTangent(e.target.checked)}
-          />
-          Show Tangent
-        </label>
-        <label className="flex items-center gap-2 text-gray-700">
-          <input
-            type="checkbox"
             checked={showWaves}
             onChange={(e) => setShowWaves(e.target.checked)}
           />
@@ -155,42 +147,31 @@ const TrigClock = () => {
           <option value="radians">Radians Only</option>
         </select>
 
-        <button
-          onClick={() => setPlaying(!playing)}
-          className={`px-4 py-1 rounded font-medium ${
-            playing 
-              ? 'bg-red-100 text-red-700 hover:bg-red-200' 
-              : 'bg-green-100 text-green-700 hover:bg-green-200'
-          }`}
-        >
-          {playing ? '⏸ Pause' : '▶️ Play'}
-        </button>
-
         <div className="flex gap-2">
           <div className="border rounded p-2 bg-gray-50">
             <div className="text-xs text-gray-600 mb-1">Degrees</div>
             <div className="flex gap-1">
               <button
                 onClick={() => adjustAngle(-10, true)}
-                className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-sm"
+                className="px-2 py-1 bg-gray-100 text-gray-600 hover:bg-gray-200 rounded text-sm"
               >
                 -10°
               </button>
               <button
                 onClick={() => adjustAngle(-1, true)}
-                className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-sm"
+                className="px-2 py-1 bg-gray-100 text-gray-600 hover:bg-gray-200 rounded text-sm"
               >
                 -1°
               </button>
               <button
                 onClick={() => adjustAngle(1, true)}
-                className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-sm"
+                className="px-2 py-1 bg-gray-100 text-gray-600 hover:bg-gray-200 rounded text-sm"
               >
                 +1°
               </button>
               <button
                 onClick={() => adjustAngle(10, true)}
-                className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-sm"
+                className="px-2 py-1 bg-gray-100 text-gray-600 hover:bg-gray-200 rounded text-sm"
               >
                 +10°
               </button>
@@ -201,28 +182,16 @@ const TrigClock = () => {
             <div className="text-xs text-gray-600 mb-1">Radians</div>
             <div className="flex gap-1">
               <button
-                onClick={() => adjustAngle(-Math.PI/6)}
-                className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-sm"
+                onClick={() => adjustAngle(-1)}
+                className="px-2 py-1 bg-gray-100 text-gray-600 hover:bg-gray-200 rounded text-sm"
               >
-                -π/6
+                -1
               </button>
               <button
-                onClick={() => adjustAngle(-Math.PI/12)}
-                className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-sm"
+                onClick={() => adjustAngle(1)}
+                className="px-2 py-1 bg-gray-100 text-gray-600 hover:bg-gray-200 rounded text-sm"
               >
-                -π/12
-              </button>
-              <button
-                onClick={() => adjustAngle(Math.PI/12)}
-                className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-sm"
-              >
-                +π/12
-              </button>
-              <button
-                onClick={() => adjustAngle(Math.PI/6)}
-                className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-sm"
-              >
-                +π/6
+                +1
               </button>
             </div>
           </div>
@@ -238,6 +207,17 @@ const TrigClock = () => {
         >
           🔄 Reset
         </button>
+
+        <button
+          onClick={() => setPlaying(!playing)}
+          className={`px-4 py-1 rounded font-medium ${
+            playing 
+              ? 'bg-red-100 text-red-700 hover:bg-red-200' 
+              : 'bg-green-100 text-green-700 hover:bg-green-200'
+          }`}
+        >
+          {playing ? '⏸ Pause' : '▶️ Play'}
+        </button>
       </div>
       
       <div 
@@ -246,12 +226,12 @@ const TrigClock = () => {
         onMouseUp={() => setIsDragging(false)}
         onMouseLeave={() => setIsDragging(false)}
       >
-        <Stage width={600} height={400}>
+        <Stage width={700} height={300}>
           <Layer>
             {/* Unit circle label */}
             <Text
               x={centerX - 30}
-              y={centerY - radius - 25}
+              y={centerY - radius - 45}
               text="Unit Circle (radius = 1)"
               fontSize={12}
               fill="#666"
@@ -393,16 +373,6 @@ const TrigClock = () => {
             {/* Wave visualization */}
             {showWaves && (
               <>
-                {/* Wave background */}
-                <Rect
-                  x={waveX}
-                  y={centerY - radius}
-                  width={waveWidth}
-                  height={2 * radius}
-                  fill="#f5f5f5"
-                  stroke="#ddd"
-                />
-                
                 {/* Sine wave */}
                 {showSine && wavePoints.sine.length > 1 && (
                   <Line
