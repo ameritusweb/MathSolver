@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Stage, Layer, Circle, Line, Text, Arc, Group, Rect } from 'react-konva';
 
 const TrigClock = () => {
   const [angle, setAngle] = useState(0);
+  const [arcLength, setArcLength] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [showSine, setShowSine] = useState(true);
   const [showCosine, setShowCosine] = useState(true);
@@ -11,6 +12,13 @@ const TrigClock = () => {
   const [wavePoints, setWavePoints] = useState({ sine: [], cosine: [] });
   const [labelStyle, setLabelStyle] = useState('both'); // 'radians', 'degrees', or 'both'
   const [playing, setPlaying] = useState(false);
+
+  // Calculate arc length whenever angle changes
+  useEffect(() => {
+    // Arc length = radius × angle (in radians)
+    // Since this is a unit circle, radius = 1
+    setArcLength(Math.abs(angle));
+  }, [angle]);
 
   // Animation effect
   useEffect(() => {
@@ -301,12 +309,33 @@ const TrigClock = () => {
               clockwise={false}
             />
             
-            {/* Current angle text */}
+            {/* Arc length visualization */}
+            <Arc
+              x={centerX}
+              y={centerY}
+              angle={-angle * 180 / Math.PI}
+              rotation={0}
+              innerRadius={radius - 2}
+              outerRadius={radius}
+              fill="#bbdefb"
+              stroke="#2196f3"
+              strokeWidth={1}
+              clockwise={false}
+            />
+            
+            {/* Current angle and arc length text */}
             <Text
-              x={centerX - 60}
-              y={centerY - 40}
+              x={centerX - 80}
+              y={centerY - 50}
               text={`${(angle * 180 / Math.PI).toFixed(0)}° (${(angle).toFixed(2)} rad)`}
               fontSize={14}
+            />
+            <Text
+              x={centerX - 80}
+              y={centerY - 30}
+              text={`Arc Length: ${arcLength.toFixed(2)}`}
+              fontSize={14}
+              fill="#2196f3"
             />
 
             {/* Main radius line */}
@@ -354,8 +383,8 @@ const TrigClock = () => {
             {/* Cosine visualization */}
             {showCosine && (
               <>
-                <Line
-                  points={[centerX, y, x, y]}
+            <Line
+              points={[centerX, y, x, y]}
                   stroke="#f44336"
                   strokeWidth={2}
                   dash={[4, 4]}
@@ -410,6 +439,7 @@ const TrigClock = () => {
           <li>Notice how the unit circle (radius = 1) relates to the values</li>
           <li>Toggle between different angle label styles</li>
           <li>Observe how the waves repeat every full rotation (2π)</li>
+          <li>Track the arc length traveled along the circle's circumference</li>
         </ul>
       </div>
     </div>
