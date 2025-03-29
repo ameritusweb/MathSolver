@@ -36,8 +36,8 @@ const TrigClock = () => {
 
   // Calculate point position
   const x = centerX + radius * Math.cos(angle);
-  const y = centerY - radius * Math.sin(angle);
-  const sine = -Math.sin(angle);
+  const y = centerY - radius * Math.sin(angle);  // Negative because canvas y grows downward
+  const sine = Math.sin(angle);  // Removed the negative sign here
   const cosine = Math.cos(angle);
   const tangent = Math.tan(angle);
 
@@ -64,8 +64,8 @@ const TrigClock = () => {
   // Update wave points when angle changes
   useEffect(() => {
     setWavePoints(prev => {
-      const newSine = [...prev.sine, { x: angle * 30, y: sine * radius }];
-      const newCosine = [...prev.cosine, { x: angle * 30, y: cosine * radius }];
+      const newSine = [...prev.sine, { x: angle * 30, y: -sine * radius }];  // Negative for canvas coordinates
+      const newCosine = [...prev.cosine, { x: angle * 30, y: -cosine * radius }];  // Negative for canvas coordinates
       
       // Keep only last 50 points
       if (newSine.length > 50) newSine.shift();
@@ -81,21 +81,39 @@ const TrigClock = () => {
   const handleDrag = (e) => {
     if (!isDragging) return;
     
-    const stage = e.target.getStage();
-    const mousePos = stage.getPointerPosition();
+    const mousePos = e.target.getStage().getPointerPosition();
     
+    // Calculate angle from mouse position relative to center
     const dx = mousePos.x - centerX;
     const dy = mousePos.y - centerY;
     let newAngle = Math.atan2(-dy, dx);
     
+    // Ensure angle is positive
     if (newAngle < 0) newAngle += 2 * Math.PI;
+    
     setAngle(newAngle);
+  };
+
+  // Angle adjustment functions
+  const adjustAngle = (amount, isDegrees = false) => {
+    setPlaying(false); // Stop any animation
+    let adjustment = amount;
+    if (isDegrees) {
+      adjustment = (amount * Math.PI) / 180; // Convert degrees to radians
+    }
+    setAngle(prev => {
+      let newAngle = prev + adjustment;
+      // Keep angle between 0 and 2π
+      while (newAngle >= 2 * Math.PI) newAngle -= 2 * Math.PI;
+      while (newAngle < 0) newAngle += 2 * Math.PI;
+      return newAngle;
+    });
   };
 
   return (
     <div className="flex flex-col items-center">
       <div className="flex gap-4 mb-4 flex-wrap items-center">
-        <label className="flex items-center gap-2">
+        <label className="flex items-center gap-2 text-gray-700">
           <input
             type="checkbox"
             checked={showSine}
@@ -103,7 +121,7 @@ const TrigClock = () => {
           />
           Show Sine
         </label>
-        <label className="flex items-center gap-2">
+        <label className="flex items-center gap-2 text-gray-700">
           <input
             type="checkbox"
             checked={showCosine}
@@ -111,7 +129,7 @@ const TrigClock = () => {
           />
           Show Cosine
         </label>
-        <label className="flex items-center gap-2">
+        <label className="flex items-center gap-2 text-gray-700">
           <input
             type="checkbox"
             checked={showTangent}
@@ -119,7 +137,7 @@ const TrigClock = () => {
           />
           Show Tangent
         </label>
-        <label className="flex items-center gap-2">
+        <label className="flex items-center gap-2 text-gray-700">
           <input
             type="checkbox"
             checked={showWaves}
@@ -147,6 +165,68 @@ const TrigClock = () => {
         >
           {playing ? '⏸ Pause' : '▶️ Play'}
         </button>
+
+        <div className="flex gap-2">
+          <div className="border rounded p-2 bg-gray-50">
+            <div className="text-xs text-gray-600 mb-1">Degrees</div>
+            <div className="flex gap-1">
+              <button
+                onClick={() => adjustAngle(-10, true)}
+                className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-sm"
+              >
+                -10°
+              </button>
+              <button
+                onClick={() => adjustAngle(-1, true)}
+                className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-sm"
+              >
+                -1°
+              </button>
+              <button
+                onClick={() => adjustAngle(1, true)}
+                className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-sm"
+              >
+                +1°
+              </button>
+              <button
+                onClick={() => adjustAngle(10, true)}
+                className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-sm"
+              >
+                +10°
+              </button>
+            </div>
+          </div>
+
+          <div className="border rounded p-2 bg-gray-50">
+            <div className="text-xs text-gray-600 mb-1">Radians</div>
+            <div className="flex gap-1">
+              <button
+                onClick={() => adjustAngle(-Math.PI/6)}
+                className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-sm"
+              >
+                -π/6
+              </button>
+              <button
+                onClick={() => adjustAngle(-Math.PI/12)}
+                className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-sm"
+              >
+                -π/12
+              </button>
+              <button
+                onClick={() => adjustAngle(Math.PI/12)}
+                className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-sm"
+              >
+                +π/12
+              </button>
+              <button
+                onClick={() => adjustAngle(Math.PI/6)}
+                className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-sm"
+              >
+                +π/6
+              </button>
+            </div>
+          </div>
+        </div>
 
         <button
           onClick={() => {
@@ -231,13 +311,14 @@ const TrigClock = () => {
             <Arc
               x={centerX}
               y={centerY}
-              angle={angle * 180 / Math.PI}
+              angle={-angle * 180 / Math.PI}
               rotation={0}
               innerRadius={20}
               outerRadius={30}
               fill="#e3f2fd"
               stroke="#2196f3"
               strokeWidth={1}
+              clockwise={false}
             />
             
             {/* Current angle text */}
@@ -261,8 +342,14 @@ const TrigClock = () => {
               y={y}
               radius={6}
               fill="#2196f3"
+              draggable
+              onDragStart={() => setIsDragging(true)}
+              onDragMove={handleDrag}
+              onDragEnd={() => setIsDragging(false)}
               onMouseDown={() => setIsDragging(true)}
+              onMouseUp={() => setIsDragging(false)}
               onTouchStart={() => setIsDragging(true)}
+              onTouchEnd={() => setIsDragging(false)}
             />
 
             {/* Sine visualization */}
