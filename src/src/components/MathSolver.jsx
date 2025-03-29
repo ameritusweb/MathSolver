@@ -6,6 +6,7 @@ import { MinusCircle } from 'lucide-react';
 import { ShapeSelectorModal } from './ShapeSelectorModal';
 import NumberShapes from './NumberShapes';
 import VisualModal from './VisualModal';
+import InteractiveFraction from './InteractiveFraction';
 
 const MathSolver = () => {
 
@@ -176,6 +177,7 @@ const MathSolver = () => {
     { id: '0', type: 'number', text: '0' },
     { id: 'x', type: 'variable', text: 'x' },
     { id: 'y', type: 'variable', text: 'y' },
+    { id: 'fraction', type: 'fraction', text: 'X/Y' },
     { id: 'plus', type: 'operator', text: '+' },
     { id: 'minus', type: 'operator', text: '-' },
     { id: 'multiply', type: 'operator', text: '×' },
@@ -288,6 +290,8 @@ const visualTools = [
 
   const [shapeSelector, setShapeSelector] = useState(null);
 
+  const [editingFraction, setEditingFraction] = useState(null);
+
   const toggleHighlightedContainer = (containerId) => {
     if (highlightedContainer === containerId) { 
       setHighlightedContainer(null); // Remove highlight if already highlighted
@@ -365,24 +369,59 @@ const visualTools = [
   const layerRef = useRef(null);
 
   const handleShapeSelect = ({ shape, color, value }) => {
-    const newSymbol = {
-      id: `number_${Date.now()}`,
-      instanceId: `number_${Date.now()}_${Math.random()}`,
-      type: 'number',
-      text: value.toString(),
-      shape,
-      color,
-      x: stageRef.current.width() / 2,
-      y: stageRef.current.height() / 2,
-      containerId: null,
-    };
-    
-    setPlacedSymbols([...placedSymbols, newSymbol]);
+    if (editingFraction) {
+      setPlacedSymbols(symbols => 
+        symbols.map(sym => {
+          if (sym.instanceId === editingFraction.instanceId) {
+            const update = {
+              value,
+              isShape: !!shape,
+              shape,
+              color
+            };
+            return {
+              ...sym,
+              [editingFraction.part]: update
+            };
+          }
+          return sym;
+        })
+      );
+      setEditingFraction(null);
+    } else {
+      const newSymbol = {
+        id: `number_${Date.now()}`,
+        instanceId: `number_${Date.now()}_${Math.random()}`,
+        type: 'number',
+        text: value.toString(),
+        shape,
+        color,
+        x: stageRef.current.width() / 2,
+        y: stageRef.current.height() / 2,
+        containerId: null,
+      };
+      
+      setPlacedSymbols([...placedSymbols, newSymbol]);
+    }
     setShapeSelector(null);
   };
   
   // Handle dropping a symbol onto the canvas
   const handleSymbolDrop = (symbol) => {
+    if (symbol.type === 'fraction') {
+      const newSymbol = {
+        ...symbol,
+        instanceId: `${symbol.id}_${Date.now()}`,
+        x: stageRef.current.width() / 2,
+        y: stageRef.current.height() / 2,
+        containerId: null,
+        numerator: { value: 'X', isShape: false },
+        denominator: { value: 'Y', isShape: false }
+      };
+      setPlacedSymbols([...placedSymbols, newSymbol]);
+      return;
+    }
+
     if (symbol.type === 'number' && useShapes) {
       setShapeSelector({
         value: isSignFlipped ? -parseFloat(symbol.text) : parseFloat(symbol.text)
@@ -1186,7 +1225,77 @@ const visualTools = [
   
   // Render placed symbols on canvas
   const renderPlacedSymbols = () => {
-    return placedSymbols.map((symbol) => (
+    return placedSymbols.map((symbol) => {
+      if (symbol.type === 'fraction') {
+        return (
+          <Group
+            key={symbol.instanceId}
+            draggable
+            onDragMove={(e) => handleSymbolDragMove(e, symbol.instanceId)}
+            onDragEnd={(e) => handleSymbolDragEnd(e, symbol.instanceId)}
+          >
+            <InteractiveFraction
+              x={symbol.x}
+              y={symbol.y}
+              numerator={symbol.numerator}
+              denominator={symbol.denominator}
+              selected={selectedSymbol === symbol.instanceId}
+              onClick={(e) => {
+                e.cancelBubble = true;
+                setSelectedSymbol(
+                  symbol.instanceId === selectedSymbol ? null : symbol.instanceId
+                );
+              }}
+              onNumeratorClick={() => {
+                setEditingFraction({
+                  instanceId: symbol.instanceId,
+                  part: 'numerator'
+                });
+                setShapeSelector({
+                  value: symbol.numerator.value === 'X' ? 1 : symbol.numerator.value,
+                  isFraction: true
+                });
+              }}
+              onDenominatorClick={() => {
+                setEditingFraction({
+                  instanceId: symbol.instanceId,
+                  part: 'denominator'
+                });
+                setShapeSelector({
+                  value: symbol.denominator.value === 'Y' ? 1 : symbol.denominator.value,
+                  isFraction: true
+                });
+              }}
+            />
+            
+            {/* Delete button when selected */}
+            {selectedSymbol === symbol.instanceId && (
+              <Group x={symbol.x + 45} y={symbol.y - 25}>
+                <Rect
+                  width={15}
+                  height={15}
+                  fill="red"
+                  cornerRadius={2}
+                  onClick={(e) => {
+                    e.cancelBubble = true;
+                    removeSymbol(symbol.instanceId);
+                  }}
+                />
+                <Text
+                  text="×"
+                  fontSize={12}
+                  fill="white"
+                  width={15}
+                  height={15}
+                  align="center"
+                  verticalAlign="middle"
+                />
+              </Group>
+            )}
+          </Group>
+        );
+      }
+
       <Group
         key={symbol.instanceId}
         x={symbol.x}
@@ -1278,7 +1387,7 @@ const visualTools = [
         </Group>
         )}
       </Group>
-    ));
+    });
   };
 
   return (
