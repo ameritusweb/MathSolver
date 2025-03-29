@@ -1,7 +1,7 @@
 import React from 'react';
 import { Group, Circle, Rect, Line, Star } from 'react-konva';
 
-const KonvaShape = ({ shape, color, size = 16, x, y }) => {
+const KonvaShape = ({ shape, color, size = 20, x, y }) => {
   switch (shape) {
     case 'circle':
       return (
@@ -78,7 +78,7 @@ const NumberShapes = ({ value, shapeType, color, width = 100 }) => {
   const shapes = Array.from({ length: count }, (_, i) => i);
 
   // Calculate grid layout
-  const size = 16; // size of each shape
+  const size = 20; // size of each shape
   const padding = 4; // padding between shapes
   const cols = Math.min(5, count); // max 5 shapes per row
   const rows = Math.ceil(count / cols);

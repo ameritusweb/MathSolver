@@ -254,6 +254,10 @@ const MathSolver = () => {
   
   const [activeVisual, setActiveVisual] = useState(null);
 
+  const [selectedSymbol, setSelectedSymbol] = useState(null);
+
+  const [useShapes, setUseShapes] = useState(false);
+
 // Add this to the list of categories in renderSymbolsToolbar
 const visualTools = [
   { id: 'clock', name: 'Trigonometry Clock', icon: '🕒', description: 'Interactive visualization of sine, cosine, and tangent on a clock face' },
@@ -379,7 +383,7 @@ const visualTools = [
   
   // Handle dropping a symbol onto the canvas
   const handleSymbolDrop = (symbol) => {
-    if (symbol.type === 'number') {
+    if (symbol.type === 'number' && useShapes) {
       setShapeSelector({
         value: isSignFlipped ? -parseFloat(symbol.text) : parseFloat(symbol.text)
       });
@@ -826,6 +830,17 @@ const visualTools = [
               onClick={() => setActiveCategory('math')}
             >
               Math
+              {activeCategory === 'math' && (
+              <button
+                className={`ml-2 px-2 py-0.5 text-sm rounded ${useShapes ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setUseShapes(!useShapes);
+                }}
+              >
+                {useShapes ? '🎨 Shapes' : 'Numbers'}
+              </button>
+            )}
             </button>
             <button
               className={`px-2 py-1 ${activeCategory === 'math' ? 'text-gray-800' : 'text-gray-400'} text-lg appearance-none font-bold bg-white border-t border-b border-r rounded-r hover:bg-blue-50 flex items-center ${isSignFlipped ? 'bg-blue-100' : ''}`}
@@ -1179,6 +1194,15 @@ const visualTools = [
         draggable
         onDragMove={(e) => handleSymbolDragMove(e, symbol.instanceId)}
         onDragEnd={(e) => handleSymbolDragEnd(e, symbol.instanceId)}
+        onClick={(e) => {
+          e.cancelBubble = true;
+          setSelectedSymbol(symbol.instanceId === selectedSymbol ? null : symbol.instanceId);
+        }}
+        onTouchStart={(e) => {
+          e.evt.preventDefault();
+          e.cancelBubble = true;
+          setSelectedSymbol(symbol.instanceId === selectedSymbol ? null : symbol.instanceId);
+        }}
       >
         {symbol.type === 'number' && symbol.shape ? (
         <NumberShapes
@@ -1215,6 +1239,7 @@ const visualTools = [
       )}
         
         {/* Remove button */}
+        {selectedSymbol === symbol.instanceId && (
         <Group x={15} y={-25}>
           <Rect
             width={15}
@@ -1251,6 +1276,7 @@ const visualTools = [
             }}
           />
         </Group>
+        )}
       </Group>
     ));
   };
